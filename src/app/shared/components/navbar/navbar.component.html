@@ -1,0 +1,24 @@
+<!-- navbar.component.html -->
+<div class="navbar">
+  <div class="search-container">
+    <div class="search-box">
+      <i class="material-icons search-icon">search</i>
+      <input
+        type="text"
+        placeholder="Search"
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="search()"
+      />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="notification-btn">
+      <i class="material-icons">notifications</i>
+    </button>
+
+    <div class="user-profile">
+      <img [src]="userInfo.avatar" alt="User Profile" class="avatar" />
+    </div>
+  </div>
+</div>

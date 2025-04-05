@@ -1,0 +1,24 @@
+<!-- sidebar.component.html -->
+<div class="sidebar">
+  <div class="logo">
+    <a href="/">
+      <img src="assets/images/logo.png" alt="Logo" class="logo-img" />
+    </a>
+  </div>
+
+  <nav class="menu">
+    <ul>
+      <li
+        *ngFor="let item of menuItems"
+        [ngClass]="{ active: isActive(item.route) }"
+      >
+        <a [routerLink]="item.route">
+          <span class="icon">
+            <i class="material-icons">{{ item.icon }}</i>
+          </span>
+          <span class="title">{{ item.title }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</div>

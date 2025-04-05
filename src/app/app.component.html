@@ -1,0 +1,7 @@
+<div class="app-container">
+  <app-sidebar></app-sidebar>
+  <app-navbar [pageTitle]="pageTitle"></app-navbar>
+  <app-content-area [pageTitle]="pageTitle">
+    <router-outlet></router-outlet>
+  </app-content-area>
+</div>

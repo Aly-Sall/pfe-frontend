@@ -1,0 +1,18 @@
+// content-area.component.scss
+.content-area {
+  margin-left: 260px;
+  padding: 80px 24px 24px;
+  min-height: 100vh;
+  background-color: #f9fafb;
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 24px;
+  }
+
+  .content {
+    // Styles spécifiques pour le contenu
+  }
+}
