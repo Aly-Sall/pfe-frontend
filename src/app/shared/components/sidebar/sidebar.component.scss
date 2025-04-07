@@ -1,6 +1,5 @@
-// sidebar.component.scss
 .sidebar {
-  width: 260px;
+  width: 200px;
   height: 100vh;
   position: fixed;
   top: 0;
@@ -45,7 +44,7 @@
           text-decoration: none;
           border-radius: 6px;
           margin: 0 8px;
-          transition: all 0.2s;
+          transition: background-color 0.2s, color 0.2s; /* Added transition for smooth effect */
 
           .icon {
             margin-right: 12px;
