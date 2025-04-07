@@ -1,5 +1,5 @@
 .sidebar {
-  width: 200px;
+  width: 220px;
   height: 100vh;
   position: fixed;
   top: 0;
@@ -7,11 +7,6 @@
   background-color: #fff;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   z-index: 100;
-
-  .sidebar ul li:nth-child(2) {
-    background-color: #000; /* noir */
-    color: #fff; /* texte blanc pour la lisibilité */
-  }
 
   .logo {
     padding: 16px 24px;
@@ -44,7 +39,7 @@
           text-decoration: none;
           border-radius: 6px;
           margin: 0 8px;
-          transition: background-color 0.2s, color 0.2s; /* Added transition for smooth effect */
+          transition: background-color 0.3s ease, color 0.3s ease; /* Smoother transition */
 
           .icon {
             margin-right: 12px;
@@ -61,21 +56,14 @@
           }
 
           &:hover {
-            background-color: #f8f9fa;
-            color: #3b82f6;
+            background-color: #000; /* Fond noir lors du hover */
+            color: white; /* Texte en blanc pour la lisibilité */
           }
         }
 
-        &.active {
-          a {
-            background-color: #000;
-            color: white;
-
-            &:hover {
-              background-color: #000;
-              color: white;
-            }
-          }
+        &:hover {
+          background-color: #000; /* Fond noir sur hover même quand actif */
+          color: white;
         }
       }
     }
