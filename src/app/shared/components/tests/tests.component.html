@@ -1,0 +1,57 @@
+<div class="tests-container">
+  <!-- Titre principal -->
+  <h1 class="page-title">Tests</h1>
+
+  <!-- Section des tests actifs -->
+  <div class="tests-section">
+    <div class="section-header">
+      <h2 class="section-title">Active Tests</h2>
+      <button class="create-test-btn" (click)="createNewTest()">
+        Create New Test
+      </button>
+    </div>
+
+    <!-- Indicateur de chargement -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading tests...</p>
+    </div>
+
+    <!-- Message si aucun test trouvé -->
+    <div *ngIf="!isLoading && filteredTests.length === 0" class="no-tests">
+      <p>No tests found. Try creating a new test.</p>
+    </div>
+
+    <!-- Liste des tests -->
+    <div class="tests-list" *ngIf="!isLoading && filteredTests.length > 0">
+      <div class="test-card" *ngFor="let test of filteredTests">
+        <div class="test-info">
+          <h3 class="test-name">{{ test.name }}</h3>
+          <p class="test-category">{{ test.category }}</p>
+          <div class="test-meta">
+            <span
+              class="status-badge"
+              [ngClass]="{
+                active: test.status === 'Active',
+                completed: test.status === 'Completed'
+              }"
+            >
+              {{ test.status }}
+            </span>
+            <span class="candidates-count"
+              >{{ test.candidates }} Candidates</span
+            >
+          </div>
+        </div>
+        <div class="test-actions">
+          <button class="action-btn edit-btn" (click)="editTest(test)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="action-btn delete-btn" (click)="deleteTest(test)">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

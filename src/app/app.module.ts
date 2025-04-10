@@ -8,6 +8,7 @@ import { SidebarComponent } from './shared/components/sidebar/sidebar.component'
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
 import { ContentAreaComponent } from './shared/components/content-area/content-area.component';
 import { DashboardComponent } from './shared/components/dashboard/dashboard.component';
+import { TestsComponent } from './shared/components/tests/tests.component';
 
 @NgModule({
   declarations: [
@@ -16,6 +17,7 @@ import { DashboardComponent } from './shared/components/dashboard/dashboard.comp
     NavbarComponent,
     ContentAreaComponent,
     DashboardComponent,
+    TestsComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [],
