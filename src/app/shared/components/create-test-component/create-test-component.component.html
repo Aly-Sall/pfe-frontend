@@ -1,0 +1,166 @@
+<div class="create-test-container">
+  <h1 class="form-title">Create New Test</h1>
+
+  <form [formGroup]="testForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="testType">Test Type</label>
+      <div class="select-wrapper">
+        <select id="testType" formControlName="testType" class="form-control">
+          <option *ngFor="let type of testTypes" [value]="type">
+            {{ type }}
+          </option>
+        </select>
+        <span class="select-arrow">&#9662;</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="testName">Test Name</label>
+      <input
+        type="text"
+        id="testName"
+        formControlName="testName"
+        class="form-control"
+        placeholder="Enter test name"
+      />
+      <div
+        *ngIf="
+          testForm.get('testName')?.invalid && testForm.get('testName')?.touched
+        "
+        class="error-message"
+      >
+        Test name is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea
+        id="description"
+        formControlName="description"
+        class="form-control"
+        rows="4"
+        placeholder="Enter test description"
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label for="duration">Duration (minutes)</label>
+        <input
+          type="number"
+          id="duration"
+          formControlName="duration"
+          class="form-control"
+          placeholder="Enter duration"
+        />
+        <div
+          *ngIf="
+            testForm.get('duration')?.invalid &&
+            testForm.get('duration')?.touched
+          "
+          class="error-message"
+        >
+          Valid duration is required
+        </div>
+      </div>
+
+      <div class="form-group half-width">
+        <label for="totalPoints">Total Points</label>
+        <input
+          type="number"
+          id="totalPoints"
+          formControlName="totalPoints"
+          class="form-control"
+          placeholder="Enter total points"
+        />
+        <div
+          *ngIf="
+            testForm.get('totalPoints')?.invalid &&
+            testForm.get('totalPoints')?.touched
+          "
+          class="error-message"
+        >
+          Valid total points is required
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group half-width">
+        <label for="startDate">Start Date</label>
+        <div class="date-input-wrapper">
+          <input
+            type="date"
+            id="startDate"
+            formControlName="startDate"
+            class="form-control"
+          />
+          <span class="date-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group half-width">
+        <label for="dueDate">Due Date</label>
+        <div class="date-input-wrapper">
+          <input
+            type="date"
+            id="dueDate"
+            formControlName="dueDate"
+            class="form-control"
+          />
+          <span class="date-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Test Settings</label>
+      <div formGroupName="settings">
+        <div class="checkbox-group">
+          <input
+            type="checkbox"
+            id="randomizeQuestions"
+            formControlName="randomizeQuestions"
+          />
+          <label for="randomizeQuestions" class="checkbox-label"
+            >Randomize question order</label
+          >
+        </div>
+
+        <div class="checkbox-group">
+          <input
+            type="checkbox"
+            id="showResultsImmediately"
+            formControlName="showResultsImmediately"
+          />
+          <label for="showResultsImmediately" class="checkbox-label"
+            >Show results immediately</label
+          >
+        </div>
+
+        <div class="checkbox-group">
+          <input
+            type="checkbox"
+            id="allowMultipleAttempts"
+            formControlName="allowMultipleAttempts"
+          />
+          <label for="allowMultipleAttempts" class="checkbox-label"
+            >Allow multiple attempts</label
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-cancel" (click)="onCancel()">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-create">Create Test</button>
+    </div>
+  </form>
+</div>

@@ -2,8 +2,17 @@
   <!-- Titre principal -->
   <h1 class="page-title">Tests</h1>
 
-  <!-- Section des tests actifs -->
-  <div class="tests-section">
+  <!-- Formulaire de création de test (affiché conditionnellement) -->
+  <div *ngIf="showCreateForm">
+    <app-create-test-component
+      (cancel)="handleCancelCreate()"
+      (create)="handleCreateTest($event)"
+    >
+    </app-create-test-component>
+  </div>
+
+  <!-- Section des tests actifs (masquée quand le formulaire est affiché) -->
+  <div *ngIf="!showCreateForm" class="tests-section">
     <div class="section-header">
       <h2 class="section-title">Active Tests</h2>
       <button class="create-test-btn" (click)="createNewTest()">

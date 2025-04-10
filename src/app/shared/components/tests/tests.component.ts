@@ -39,6 +39,9 @@ export class TestsComponent implements OnInit {
   ];
   isLoading: boolean = false;
 
+  // Ajoutez cette propriété
+  showCreateForm: boolean = false;
+
   constructor() {}
 
   ngOnInit(): void {
@@ -54,9 +57,31 @@ export class TestsComponent implements OnInit {
     }, 500);
   }
 
+  // Ajoutez cette méthode
   createNewTest(): void {
-    console.log('Creating new test');
-    // Implémentez la logique pour créer un nouveau test
+    this.showCreateForm = true;
+  }
+
+  // Ajoutez cette méthode
+  handleCancelCreate(): void {
+    this.showCreateForm = false;
+  }
+
+  // Ajoutez cette méthode
+  handleCreateTest(testData: any): void {
+    console.log('Creating test with data:', testData);
+
+    // Simuler l'ajout d'un nouveau test
+    const newTest: Test = {
+      id: this.tests.length + 1,
+      name: testData.testName,
+      category: testData.testType,
+      status: 'Active',
+      candidates: 0,
+    };
+
+    this.tests.unshift(newTest);
+    this.showCreateForm = false;
   }
 
   editTest(test: Test): void {
@@ -69,7 +94,6 @@ export class TestsComponent implements OnInit {
     // Implémentez la logique pour supprimer un test
   }
 
-  // Comme nous n'avons plus de recherche, nous pouvons simplement utiliser les tests directement
   get filteredTests(): Test[] {
     return this.tests;
   }
