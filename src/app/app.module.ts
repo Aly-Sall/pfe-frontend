@@ -10,6 +10,7 @@ import { ContentAreaComponent } from './shared/components/content-area/content-a
 import { DashboardComponent } from './shared/components/dashboard/dashboard.component';
 import { TestsComponent } from './shared/components/tests/tests.component';
 import { CreateTestComponentComponent } from './shared/components/create-test-component/create-test-component.component';
+import { CandidatesComponent } from './shared/components/candidates/candidates.component';
 
 @NgModule({
   declarations: [
@@ -20,6 +21,7 @@ import { CreateTestComponentComponent } from './shared/components/create-test-co
     DashboardComponent,
     TestsComponent,
     CreateTestComponentComponent,
+    CandidatesComponent,
   ],
   imports: [
     BrowserModule,

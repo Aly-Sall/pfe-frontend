@@ -1,0 +1,142 @@
+<!-- candidates.component.html -->
+<div class="candidates-container">
+  <!-- En-tête avec titre et bouton d'ajout -->
+  <div class="header">
+    <h1>Candidats</h1>
+    <div class="actions">
+      <div class="search-container">
+        <input
+          type="text"
+          placeholder="Rechercher un candidat..."
+          class="search-input"
+        />
+        <i class="search-icon">🔍</i>
+      </div>
+      <button class="btn-primary" routerLink="/candidates/new">
+        <i class="add-icon">+</i>
+        Ajouter un candidat
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistiques des candidats -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-value">{{ totalCandidates }}</div>
+      <div class="stat-label">Total Candidats</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ activeCandidates }}</div>
+      <div class="stat-label">Candidats actifs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ successRate }}%</div>
+      <div class="stat-label">Taux de réussite</div>
+    </div>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- Chargement -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Chargement des données...</p>
+  </div>
+
+  <!-- Tableau des candidats -->
+  <div *ngIf="!loading && !error" class="table-container">
+    <table class="candidates-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Date d'inscription</th>
+          <th>Tests passés</th>
+          <th>Score moyen</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let candidate of candidates">
+          <td>{{ candidate.nom }}</td>
+          <td>{{ candidate.email }}</td>
+          <td>{{ candidate.date | date : "dd/MM/yyyy" }}</td>
+          <td>{{ candidate.testsCount }}</td>
+          <td>
+            <div
+              class="score-badge"
+              [ngClass]="getScoreClass(candidate.scoreObtenu ?? 0)"
+            >
+              {{ candidate.scoreObtenu }}%
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="candidate.status">
+              {{ candidate.status }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button
+              class="btn-icon"
+              (click)="viewResults(candidate.id)"
+              title="Voir les résultats"
+            >
+              <i class="view-icon">👁️</i>
+            </button>
+            <button
+              class="btn-icon"
+              (click)="editCandidate(candidate.id)"
+              title="Modifier"
+            >
+              <i class="edit-icon">✏️</i>
+            </button>
+            <button
+              class="btn-icon"
+              (click)="deleteCandidate(candidate.id)"
+              title="Supprimer"
+            >
+              <i class="delete-icon">🗑️</i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Message si aucun candidat -->
+    <div *ngIf="candidates.length === 0" class="no-data">
+      Aucun candidat trouvé
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!loading && !error && candidates.length > 0" class="pagination">
+    <button
+      class="btn-page"
+      [disabled]="currentPage === 1"
+      (click)="loadCandidates(currentPage - 1)"
+    >
+      <i class="prev-icon">←</i>
+    </button>
+    <div class="page-numbers">
+      <span
+        class="page"
+        *ngFor="let page of pages"
+        [ngClass]="{ current: page === currentPage }"
+        (click)="loadCandidates(page)"
+      >
+        {{ page }}
+      </span>
+    </div>
+    <button
+      class="btn-page"
+      [disabled]="currentPage === totalPages"
+      (click)="loadCandidates(currentPage + 1)"
+    >
+      <i class="next-icon">→</i>
+    </button>
+  </div>
+</div>
