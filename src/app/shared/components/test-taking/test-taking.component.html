@@ -1,0 +1,198 @@
+<p>test-taking works!</p>
+<div class="test-taking-container">
+  <!-- Écran de chargement -->
+  <div *ngIf="isLoading" class="loading-screen">
+    <div class="spinner"></div>
+    <p>Loading test...</p>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="hasError" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i>
+    <p>{{ errorMessage }}</p>
+    <button class="btn-primary" routerLink="/dashboard">
+      Return to Dashboard
+    </button>
+  </div>
+
+  <!-- Instructions avant de commencer le test -->
+  <div
+    *ngIf="!isLoading && !hasError && !isStarted && !isCompleted"
+    class="test-instructions"
+  >
+    <div class="instructions-card">
+      <h2>{{ test?.title }}</h2>
+
+      <div class="test-meta">
+        <div class="meta-item">
+          <span class="meta-label">Category:</span>
+          <span class="meta-value">{{
+            test?.category === 1
+              ? "General"
+              : test?.category === 2
+              ? "Technical"
+              : "Other"
+          }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Level:</span>
+          <span class="meta-value">{{
+            test?.level === 0 ? "Easy" : test?.level === 1 ? "Medium" : "Hard"
+          }}</span>
+        </div>
+        <div class="meta-item" *ngIf="test?.showTimer">
+          <span class="meta-label">Time Limit:</span>
+          <span class="meta-value">30 minutes</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Multiple Attempts:</span>
+          <span class="meta-value">{{
+            test?.tryAgain ? "Allowed" : "Not Allowed"
+          }}</span>
+        </div>
+      </div>
+
+      <div class="instructions-content">
+        <h3>Test Instructions</h3>
+        <ul>
+          <li>This test contains {{ questions.length }} questions.</li>
+          <li>Read each question carefully before answering.</li>
+          <li>Your answers are automatically saved as you progress.</li>
+          <li *ngIf="test?.showTimer">
+            You have 30 minutes to complete this test. The test will
+            automatically submit when the time expires.
+          </li>
+          <li *ngIf="test?.mode === 1">
+            This test includes monitoring for academic integrity. Screen
+            captures may be taken during the test.
+          </li>
+          <li>Once you submit the test, you cannot change your answers.</li>
+        </ul>
+      </div>
+
+      <div class="start-button-container">
+        <button class="btn-start" (click)="startTest()">Start Test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interface de passage du test -->
+  <div
+    *ngIf="!isLoading && !hasError && isStarted && !isCompleted"
+    class="test-interface"
+  >
+    <!-- Barre supérieure avec timer et progression -->
+    <div class="test-header">
+      <div class="test-title">{{ test?.title }}</div>
+
+      <div class="test-progress">
+        <div class="progress-text">
+          {{ answeredQuestions.size }} / {{ questions.length }} questions
+          answered
+        </div>
+        <div class="progress-bar">
+          <div
+            class="progress-fill"
+            [style.width.%]="getProgressPercentage()"
+          ></div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="test?.showTimer"
+        class="test-timer"
+        [class.warning]="remainingTime < 300000"
+      >
+        <i class="fas fa-clock"></i>
+        <span>{{ formattedTime }}</span>
+      </div>
+    </div>
+
+    <!-- Contenu principal - la question actuelle -->
+    <div class="test-content">
+      <!-- Navigation latérale des questions -->
+      <div class="question-nav">
+        <div class="nav-title">Questions</div>
+        <div class="question-nav-items">
+          <div
+            *ngFor="let question of questions; let i = index"
+            class="nav-item"
+            [class.current]="i === currentQuestionIndex"
+            [class.answered]="isQuestionAnswered(question.id || 0)"
+            (click)="navigateToQuestion(i)"
+          >
+            {{ i + 1 }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone de la question -->
+      <div class="question-area">
+        <div *ngIf="currentQuestion" class="question-container">
+          <div class="question-header">
+            <div class="question-number">
+              Question {{ currentQuestionIndex + 1 }}
+            </div>
+            <div class="question-type">
+              {{
+                currentQuestion.type === 0 ? "Single Choice" : "Multiple Choice"
+              }}
+            </div>
+          </div>
+
+          <div class="question-content">{{ currentQuestion.content }}</div>
+
+          <!-- Composant de réponse aux questions -->
+          <app-question-answer
+            [question]="currentQuestion"
+            [savedAnswerIds]="attemptService.getAnswer(currentQuestion.id || 0)"
+            (answerChange)="saveAnswer(currentQuestion.id || 0, $event)"
+          ></app-question-answer>
+
+          <!-- Navigation entre questions -->
+          <div class="question-navigation">
+            <button
+              class="btn-nav"
+              [disabled]="currentQuestionIndex === 0"
+              (click)="previousQuestion()"
+            >
+              <i class="fas fa-chevron-left"></i> Previous
+            </button>
+
+            <button
+              *ngIf="currentQuestionIndex < questions.length - 1"
+              class="btn-nav"
+              (click)="nextQuestion()"
+            >
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <button
+              *ngIf="currentQuestionIndex === questions.length - 1"
+              class="btn-submit"
+              (click)="completeTest()"
+            >
+              Submit Test
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton de soumission du test -->
+    <div class="test-footer">
+      <div class="completion-info">
+        {{
+          answeredQuestions.size === questions.length
+            ? "All questions answered!"
+            : questions.length -
+              answeredQuestions.size +
+              " questions unanswered"
+        }}
+      </div>
+      <button class="btn-submit-test" (click)="completeTest()">
+        Submit Test
+      </button>
+    </div>
+  </div>
+</div>

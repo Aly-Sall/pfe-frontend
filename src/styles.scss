@@ -1,1 +1,127 @@
 /* You can add global styles to this file, and also import other style files */
+/* Styles pour la vue détaillée des tests */
+.test-detail-container {
+  background-color: #f5f7fa;
+  padding: 20px;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.test-info-card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.test-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 15px 0;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.status-badge,
+.category-badge,
+.level-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background-color: #e6f7e6;
+  color: #4caf50;
+}
+
+.status-badge.inactive {
+  background-color: #f5f5f5;
+  color: #777;
+}
+
+.category-badge {
+  background-color: #f0f4ff;
+  color: #4a6cf7;
+}
+
+.level-badge {
+  background-color: #fdf7ff;
+  color: #9c27b0;
+}
+
+.test-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.detail-item .detail-label {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+.detail-item .detail-value {
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  background-color: #000;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-button:hover {
+  background-color: #333;
+}

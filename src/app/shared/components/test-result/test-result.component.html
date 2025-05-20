@@ -1,0 +1,108 @@
+<div class="test-result-container">
+  <!-- Écran de chargement -->
+  <div *ngIf="isLoading" class="loading-screen">
+    <div class="spinner"></div>
+    <p>Loading results...</p>
+  </div>
+
+  <!-- Résultats du test -->
+  <div *ngIf="!isLoading && result" class="result-content">
+    <div class="result-header">
+      <h1>Test Results</h1>
+      <div class="test-info">{{ result.testTitle }}</div>
+      <div class="completion-date">
+        Completed on {{ result.passingDate | date : "medium" }}
+      </div>
+    </div>
+
+    <div class="result-summary">
+      <div class="score-card">
+        <div class="score-circle" [ngClass]="getScoreClass()">
+          <div class="score-value">{{ result.scorePercentage }}%</div>
+        </div>
+        <div class="score-label">Your Score</div>
+        <div class="score-details">
+          {{ result.correctAnswers }} correct out of
+          {{ result.totalQuestions }} questions
+        </div>
+        <div class="score-message">{{ getScoreMessage() }}</div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-toggle-details" (click)="toggleDetailedResults()">
+        {{ showDetailedResults ? "Hide" : "Show" }} Detailed Results
+      </button>
+      <button class="btn-return" (click)="returnToDashboard()">
+        Return to Dashboard
+      </button>
+    </div>
+
+    <!-- Détails des résultats (questions et réponses) -->
+    <div *ngIf="showDetailedResults" class="detailed-results">
+      <h2>Detailed Results</h2>
+
+      <div class="question-results">
+        <div
+          *ngFor="let questionResult of result.questionResults; let i = index"
+          class="question-result"
+        >
+          <div class="question-header">
+            <div class="question-number">Question {{ i + 1 }}</div>
+            <div
+              class="question-status"
+              [ngClass]="{
+                correct: questionResult.isCorrect,
+                incorrect: !questionResult.isCorrect
+              }"
+            >
+              {{ questionResult.isCorrect ? "Correct" : "Incorrect" }}
+            </div>
+          </div>
+
+          <div class="question-content">
+            {{ questionResult.questionContent }}
+          </div>
+
+          <div class="answer-section">
+            <div class="your-answer">
+              <div class="answer-label">Your Answer:</div>
+              <div
+                class="answer-content"
+                [ngClass]="{ incorrect: !questionResult.isCorrect }"
+              >
+                <ng-container *ngIf="questionResult.selectedAnswers.length > 0">
+                  <div
+                    *ngFor="let answer of questionResult.selectedAnswers"
+                    class="answer-item"
+                  >
+                    {{ answer }}
+                  </div>
+                </ng-container>
+                <div
+                  *ngIf="questionResult.selectedAnswers.length === 0"
+                  class="no-answer"
+                >
+                  No answer provided
+                </div>
+              </div>
+            </div>
+
+            <div class="correct-answer" *ngIf="!questionResult.isCorrect">
+              <div class="answer-label">Correct Answer:</div>
+              <div class="answer-content correct">
+                <div
+                  *ngFor="let answer of questionResult.correctAnswers"
+                  class="answer-item"
+                >
+                  {{ answer }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p>test-result works!</p>

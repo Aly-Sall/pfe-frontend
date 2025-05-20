@@ -1,0 +1,310 @@
+// src/app/shared/components/test-result/test-result.component.scss
+
+.test-result-container {
+  background-color: #f5f7fa;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+/* Loading screen */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid #000;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  p {
+    color: #666;
+    font-size: 16px;
+  }
+}
+
+/* Result content */
+.result-content {
+  max-width: 800px;
+  margin: 0 auto;
+
+  .result-header {
+    text-align: center;
+    margin-bottom: 40px;
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 10px 0;
+    }
+
+    .test-info {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .completion-date {
+      font-size: 14px;
+      color: #888;
+    }
+  }
+
+  .result-summary {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+
+    .score-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+
+      .score-circle {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        position: relative;
+
+        &::before {
+          content: "";
+          position: absolute;
+          width: 140px;
+          height: 140px;
+          border-radius: 50%;
+          background-color: white;
+        }
+
+        &.excellent {
+          background-color: #4caf50;
+        }
+
+        &.good {
+          background-color: #8bc34a;
+        }
+
+        &.average {
+          background-color: #ffc107;
+        }
+
+        &.poor {
+          background-color: #f44336;
+        }
+
+        .score-value {
+          font-size: 40px;
+          font-weight: 700;
+          position: relative;
+          z-index: 1;
+
+          .excellent & {
+            color: #4caf50;
+          }
+
+          .good & {
+            color: #8bc34a;
+          }
+
+          .average & {
+            color: #ffc107;
+          }
+
+          .poor & {
+            color: #f44336;
+          }
+        }
+      }
+
+      .score-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+      }
+
+      .score-details {
+        font-size: 15px;
+        color: #555;
+        margin-bottom: 15px;
+      }
+
+      .score-message {
+        font-size: 16px;
+        color: #333;
+        max-width: 500px;
+      }
+    }
+  }
+
+  .result-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 40px;
+
+    .btn-toggle-details,
+    .btn-return {
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle-details {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      color: #333;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+    }
+
+    .btn-return {
+      background-color: #000;
+      border: none;
+      color: #fff;
+
+      &:hover {
+        background-color: #333;
+      }
+    }
+  }
+
+  .detailed-results {
+    h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 20px 0;
+      text-align: center;
+    }
+
+    .question-results {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+
+      .question-result {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+        .question-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+
+          .question-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+          }
+
+          .question-status {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 15px;
+
+            &.correct {
+              background-color: #e8f5e9;
+              color: #4caf50;
+            }
+
+            &.incorrect {
+              background-color: #ffebee;
+              color: #f44336;
+            }
+          }
+        }
+
+        .question-content {
+          font-size: 16px;
+          color: #333;
+          margin-bottom: 20px;
+          line-height: 1.5;
+        }
+
+        .answer-section {
+          .your-answer,
+          .correct-answer {
+            margin-bottom: 15px;
+
+            .answer-label {
+              font-size: 14px;
+              font-weight: 600;
+              color: #666;
+              margin-bottom: 8px;
+            }
+
+            .answer-content {
+              padding: 15px;
+              border-radius: 6px;
+              border: 1px solid #e0e0e0;
+
+              &.incorrect {
+                border-color: #ffcdd2;
+                background-color: #fff8f8;
+              }
+
+              &.correct {
+                border-color: #c8e6c9;
+                background-color: #f5fff5;
+              }
+
+              .answer-item {
+                font-size: 15px;
+                color: #333;
+                margin-bottom: 8px;
+
+                &:last-child {
+                  margin-bottom: 0;
+                }
+              }
+
+              .no-answer {
+                font-style: italic;
+                color: #777;
+              }
+            }
+          }
+
+          .correct-answer {
+            .answer-label {
+              color: #4caf50;
+            }
+          }
+        }
+      }
+    }
+  }
+}

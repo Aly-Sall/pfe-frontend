@@ -1,12 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-
-export interface Test {
-  id: number;
-  name: string;
-  category: string;
-  status: 'Active' | 'Completed';
-  candidates: number;
-}
+import { TestService, TestDto } from '../../../core/services/test.service';
 
 @Component({
   selector: 'app-tests',
@@ -14,35 +7,45 @@ export interface Test {
   styleUrls: ['./tests.component.scss'],
 })
 export class TestsComponent implements OnInit {
-  tests: Test[] = [
+  tests: TestDto[] = [
     {
       id: 1,
-      name: 'Technical Assessment',
-      category: 'Frontend Development',
-      status: 'Active',
-      candidates: 245,
+      title: 'Technical Assessment',
+      category: 1,
+      mode: 0,
+      isActive: true,
+      showTimer: true,
+      tryAgain: false,
+      level: 0,
     },
     {
       id: 2,
-      name: 'Coding Challenge',
-      category: 'Backend Development',
-      status: 'Active',
-      candidates: 178,
+      title: 'Coding Challenge',
+      category: 2,
+      mode: 0,
+      isActive: true,
+      showTimer: true,
+      tryAgain: true,
+      level: 1,
     },
     {
       id: 3,
-      name: 'Aptitude Test',
-      category: 'General Assessment',
-      status: 'Completed',
-      candidates: 312,
+      title: 'Aptitude Test',
+      category: 1,
+      mode: 0,
+      isActive: false,
+      showTimer: false,
+      tryAgain: false,
+      level: 2,
     },
   ];
   isLoading: boolean = false;
-
-  // Ajoutez cette propriété
   showCreateForm: boolean = false;
+  showDetailView: boolean = false;
+  selectedTest: TestDto | null = null;
+  testToEdit: TestDto | null = null;
 
-  constructor() {}
+  constructor(private testService: TestService) {}
 
   ngOnInit(): void {
     this.loadTests();
@@ -51,50 +54,124 @@ export class TestsComponent implements OnInit {
   loadTests(): void {
     this.isLoading = true;
 
-    // Simule un délai d'API (à supprimer lors de l'implémentation réelle)
+    // Simuler le chargement depuis l'API
     setTimeout(() => {
+      // Dans une implémentation réelle, vous appelleriez votre service ici
+      // this.testService.getAllTests().subscribe(...)
       this.isLoading = false;
     }, 500);
   }
 
-  // Ajoutez cette méthode
-  createNewTest(): void {
-    this.showCreateForm = true;
-  }
-
-  // Ajoutez cette méthode
-  handleCancelCreate(): void {
+  // Afficher les détails d'un test
+  viewTestDetails(test: TestDto): void {
+    this.selectedTest = test;
+    this.showDetailView = true;
     this.showCreateForm = false;
   }
 
-  // Ajoutez cette méthode
+  // Créer un nouveau test
+  createNewTest(): void {
+    this.testToEdit = null; // S'assurer qu'on n'est pas en mode édition
+    this.showCreateForm = true;
+    this.showDetailView = false;
+  }
+
+  // Éditer un test existant
+  editTest(test: TestDto): void {
+    this.testToEdit = test;
+    this.showCreateForm = true;
+    this.showDetailView = false;
+  }
+
+  // Gérer l'annulation de création/édition
+  handleCancelCreate(): void {
+    this.showCreateForm = false;
+    this.testToEdit = null;
+  }
+
+  // Gérer la création d'un test
   handleCreateTest(testData: any): void {
     console.log('Creating test with data:', testData);
 
+    // Dans une implémentation réelle, vous appelleriez votre service ici
+    // this.testService.createTest(newTest).subscribe(...)
+
     // Simuler l'ajout d'un nouveau test
-    const newTest: Test = {
+    const newTest: TestDto = {
       id: this.tests.length + 1,
-      name: testData.testName,
-      category: testData.testType,
-      status: 'Active',
-      candidates: 0,
+      title: testData.testName,
+      category: this.getCategoryFromType(testData.testType),
+      mode: 0,
+      isActive: true,
+      showTimer: true,
+      tryAgain: testData.settings?.allowMultipleAttempts || false,
+      level: 0,
     };
 
     this.tests.unshift(newTest);
     this.showCreateForm = false;
+    this.testToEdit = null;
   }
 
-  editTest(test: Test): void {
-    console.log('Editing test:', test);
-    // Implémentez la logique pour éditer un test
+  // Gérer la mise à jour d'un test
+  handleUpdateTest(updatedTest: TestDto): void {
+    console.log('Updating test:', updatedTest);
+
+    // Dans une implémentation réelle, vous appelleriez votre service ici
+    // this.testService.updateTest(updatedTest).subscribe(...)
+
+    // Simuler la mise à jour dans la liste locale
+    const index = this.tests.findIndex((t) => t.id === updatedTest.id);
+    if (index !== -1) {
+      this.tests[index] = updatedTest;
+    }
+
+    this.showCreateForm = false;
+    this.testToEdit = null;
   }
 
-  deleteTest(test: Test): void {
+  // Gérer la mise à jour d'un test depuis la vue détaillée
+  handleTestUpdate(updatedTest: TestDto): void {
+    // Mise à jour du test dans la liste locale
+    const index = this.tests.findIndex((t) => t.id === updatedTest.id);
+    if (index !== -1) {
+      this.tests[index] = updatedTest;
+    }
+
+    // Mettre à jour le test sélectionné
+    this.selectedTest = updatedTest;
+  }
+
+  // Supprimer un test
+  deleteTest(test: TestDto): void {
     console.log('Deleting test:', test);
-    // Implémentez la logique pour supprimer un test
+
+    if (confirm('Are you sure you want to delete this test?')) {
+      // Dans une implémentation réelle, vous appelleriez votre service ici
+      // this.testService.deleteTest(test.id).subscribe(...)
+
+      // Simuler la suppression
+      this.tests = this.tests.filter((t) => t.id !== test.id);
+    }
   }
 
-  get filteredTests(): Test[] {
+  // Convertir le type de test en catégorie
+  getCategoryFromType(type: string): number {
+    switch (type) {
+      case 'Technical Assessment':
+        return 1;
+      case 'Coding Challenge':
+        return 2;
+      case 'Aptitude Test':
+        return 1;
+      case 'Behavioral Assessment':
+        return 2;
+      default:
+        return 0;
+    }
+  }
+
+  get filteredTests(): TestDto[] {
     return this.tests;
   }
 }

@@ -11,6 +11,7 @@ import { DashboardComponent } from './shared/components/dashboard/dashboard.comp
 import { TestsComponent } from './shared/components/tests/tests.component';
 import { CreateTestComponentComponent } from './shared/components/create-test-component/create-test-component.component';
 import { CandidatesComponent } from './shared/components/candidates/candidates.component';
+import { CandidateFormComponent } from './shared/components/candidate-form/candidate-form.component';
 
 @NgModule({
   declarations: [
@@ -22,6 +23,7 @@ import { CandidatesComponent } from './shared/components/candidates/candidates.c
     TestsComponent,
     CreateTestComponentComponent,
     CandidatesComponent,
+    CandidateFormComponent,
   ],
   imports: [
     BrowserModule,

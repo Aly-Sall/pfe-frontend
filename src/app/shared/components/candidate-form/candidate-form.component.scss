@@ -1,0 +1,132 @@
+.form-container {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 600px;
+  margin: 30px auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-header {
+  margin-bottom: 30px;
+  text-align: center;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #aaa;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  .error-feedback {
+    color: #f44336;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.btn-cancel {
+  background-color: #f5f5f5;
+  color: #333;
+
+  &:hover:not(:disabled) {
+    background-color: #e0e0e0;
+  }
+}
+
+.btn-submit {
+  background-color: #000;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background-color: #333;
+  }
+}
+
+.error-message {
+  background-color: #fee6e6;
+  color: #e53e3e;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+// Animation pour le spinner
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-border {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  vertical-align: text-bottom;
+  border: 0.2em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner 0.75s linear infinite;
+  margin-right: 8px;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.2em;
+}

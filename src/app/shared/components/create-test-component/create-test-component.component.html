@@ -1,5 +1,5 @@
 <div class="create-test-container">
-  <h1 class="form-title">Create New Test</h1>
+  <h1 class="form-title">{{ isEditMode ? "Edit Test" : "Create New Test" }}</h1>
 
   <form [formGroup]="testForm" (ngSubmit)="onSubmit()">
     <div class="form-group">
@@ -160,7 +160,9 @@
       <button type="button" class="btn btn-cancel" (click)="onCancel()">
         Cancel
       </button>
-      <button type="submit" class="btn btn-create">Create Test</button>
+      <button type="submit" class="btn btn-create">
+        {{ isEditMode ? "Update Test" : "Create Test" }}
+      </button>
     </div>
   </form>
 </div>

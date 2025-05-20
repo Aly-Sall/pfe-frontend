@@ -1,0 +1,110 @@
+<!-- candidate-form.component.html -->
+<div class="form-container">
+  <div class="form-header">
+    <h1>
+      {{ isEditing ? "Modifier le candidat" : "Ajouter un nouveau candidat" }}
+    </h1>
+    <p class="subtitle">
+      Remplissez le formulaire ci-dessous pour
+      {{ isEditing ? "modifier" : "ajouter" }} un candidat
+    </p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <form [formGroup]="candidateForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="nom">Nom complet</label>
+      <input
+        type="text"
+        id="nom"
+        formControlName="nom"
+        class="form-control"
+        placeholder="Saisissez le nom complet"
+      />
+      <div
+        *ngIf="
+          candidateForm.get('nom')?.invalid && candidateForm.get('nom')?.touched
+        "
+        class="error-feedback"
+      >
+        Le nom est requis
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Adresse email</label>
+      <input
+        type="email"
+        id="email"
+        formControlName="email"
+        class="form-control"
+        placeholder="exemple@domaine.com"
+      />
+      <div
+        *ngIf="
+          candidateForm.get('email')?.invalid &&
+          candidateForm.get('email')?.touched
+        "
+        class="error-feedback"
+      >
+        <span *ngIf="candidateForm.get('email')?.errors?.['required']"
+          >L'email est requis</span
+        >
+        <span *ngIf="candidateForm.get('email')?.errors?.['email']"
+          >Veuillez saisir une adresse email valide</span
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="date">Date d'inscription</label>
+      <input
+        type="date"
+        id="date"
+        formControlName="date"
+        class="form-control"
+      />
+      <div
+        *ngIf="
+          candidateForm.get('date')?.invalid &&
+          candidateForm.get('date')?.touched
+        "
+        class="error-feedback"
+      >
+        La date d'inscription est requise
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="status">Statut</label>
+      <select id="status" formControlName="status" class="form-control">
+        <option value="active">Actif</option>
+        <option value="pending">En attente</option>
+        <option value="completed">Terminé</option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-cancel"
+        (click)="onCancel()"
+        [disabled]="isSubmitting"
+      >
+        Annuler
+      </button>
+      <button type="submit" class="btn btn-submit" [disabled]="isSubmitting">
+        <span
+          *ngIf="isSubmitting"
+          class="spinner-border spinner-border-sm"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        {{ isEditing ? "Mettre à jour" : "Ajouter" }}
+      </button>
+    </div>
+  </form>
+</div>

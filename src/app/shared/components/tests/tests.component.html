@@ -1,18 +1,97 @@
 <div class="tests-container">
   <!-- Titre principal -->
   <h1 class="page-title">Tests</h1>
-
-  <!-- Formulaire de création de test (affiché conditionnellement) -->
+  <!-- Formulaire de création/édition de test -->
   <div *ngIf="showCreateForm">
     <app-create-test-component
+      [test]="testToEdit ?? undefined"
       (cancel)="handleCancelCreate()"
       (create)="handleCreateTest($event)"
+      (update)="handleUpdateTest($event)"
     >
     </app-create-test-component>
   </div>
 
-  <!-- Section des tests actifs (masquée quand le formulaire est affiché) -->
-  <div *ngIf="!showCreateForm" class="tests-section">
+  <!-- Vue détaillée d'un test - utiliser le bon composant -->
+  <div *ngIf="showDetailView && selectedTest">
+    <!-- Ne pas utiliser app-create-test-component pour afficher les détails -->
+    <!-- Créez un nouveau composant app-test-detail ou utilisez une solution alternative -->
+    <div class="test-detail-container">
+      <div class="detail-header">
+        <button class="back-btn" (click)="showDetailView = false">
+          <i class="fas fa-arrow-left"></i> Back to Tests
+        </button>
+      </div>
+
+      <div class="test-info-card">
+        <h1 class="test-title">{{ selectedTest.title }}</h1>
+
+        <div class="badges">
+          <span
+            class="status-badge"
+            [ngClass]="{
+              active: selectedTest.isActive,
+              inactive: !selectedTest.isActive
+            }"
+          >
+            {{ selectedTest.isActive ? "Active" : "Inactive" }}
+          </span>
+          <span class="category-badge">
+            {{
+              selectedTest.category === 1
+                ? "General"
+                : selectedTest.category === 2
+                ? "Technical"
+                : "None"
+            }}
+          </span>
+          <span class="level-badge">
+            {{
+              selectedTest.level === 0
+                ? "Easy"
+                : selectedTest.level === 1
+                ? "Medium"
+                : "Hard"
+            }}
+          </span>
+        </div>
+
+        <div class="test-details">
+          <div class="detail-item">
+            <div class="detail-label">Timer:</div>
+            <div class="detail-value">
+              {{ selectedTest.showTimer ? "Enabled" : "Disabled" }}
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">Multiple Attempts:</div>
+            <div class="detail-value">
+              {{ selectedTest.tryAgain ? "Allowed" : "Not Allowed" }}
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="edit-button" (click)="editTest(selectedTest)">
+            <i class="fas fa-edit"></i> Edit Test
+          </button>
+          <div class="actions">
+            <!-- Nouveau bouton Take Test -->
+            <button
+              class="take-test-button"
+              [routerLink]="['/take-test', selectedTest.id]"
+            >
+              <i class="fas fa-play"></i> Take Test
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section des tests actifs -->
+  <div *ngIf="!showCreateForm && !showDetailView" class="tests-section">
     <div class="section-header">
       <h2 class="section-title">Active Tests</h2>
       <button class="create-test-btn" (click)="createNewTest()">
@@ -34,29 +113,54 @@
     <!-- Liste des tests -->
     <div class="tests-list" *ngIf="!isLoading && filteredTests.length > 0">
       <div class="test-card" *ngFor="let test of filteredTests">
-        <div class="test-info">
-          <h3 class="test-name">{{ test.name }}</h3>
-          <p class="test-category">{{ test.category }}</p>
+        <div class="test-info" (click)="viewTestDetails(test)">
+          <h3 class="test-name">{{ test.title }}</h3>
+          <p class="test-category">
+            {{
+              test.category === 1
+                ? "General"
+                : test.category === 2
+                ? "Technical"
+                : "None"
+            }}
+          </p>
           <div class="test-meta">
             <span
               class="status-badge"
               [ngClass]="{
-                active: test.status === 'Active',
-                completed: test.status === 'Completed'
+                active: test.isActive,
+                completed: !test.isActive
               }"
             >
-              {{ test.status }}
+              {{ test.isActive ? "Active" : "Inactive" }}
             </span>
-            <span class="candidates-count"
-              >{{ test.candidates }} Candidates</span
-            >
+            <span class="level-badge">
+              {{
+                test.level === 0 ? "Easy" : test.level === 1 ? "Medium" : "Hard"
+              }}
+            </span>
           </div>
         </div>
         <div class="test-actions">
-          <button class="action-btn edit-btn" (click)="editTest(test)">
+          <button
+            class="action-btn view-btn"
+            (click)="viewTestDetails(test)"
+            title="View Details"
+          >
+            <i class="fas fa-eye"></i>
+          </button>
+          <button
+            class="action-btn edit-btn"
+            (click)="editTest(test)"
+            title="Edit Test"
+          >
             <i class="fas fa-edit"></i>
           </button>
-          <button class="action-btn delete-btn" (click)="deleteTest(test)">
+          <button
+            class="action-btn delete-btn"
+            (click)="deleteTest(test)"
+            title="Delete Test"
+          >
             <i class="fas fa-trash"></i>
           </button>
         </div>
