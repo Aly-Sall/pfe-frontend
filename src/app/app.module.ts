@@ -18,8 +18,9 @@ import { CandidateFormComponent } from './shared/components/candidate-form/candi
 import { TestTakingComponent } from './shared/components/test-taking/test-taking.component';
 import { TestResultComponent } from './shared/components/test-result/test-result.component';
 import { QuestionAnswerComponent } from './shared/components/question-answer/question-answer.component';
+import { LoginComponent } from './shared/components/login/login.component';
 
-// Interceptors - CORRECTION ICI
+// Interceptors
 import { JwtInterceptor } from './core/interceptors/jwt.interceptor';
 import { ErrorInterceptor } from './core/interceptors/error.interceptor';
 import { LoadingInterceptor } from './core/interceptors/loading.interceptor';
@@ -32,6 +33,7 @@ import { CandidatesService } from './core/services/candidates.service';
 import { DashboardService } from './core/services/dashboard.service';
 import { CandidateEventService } from './core/services/candidate-event.service';
 import { LoadingService } from './core/services/loading.service';
+import { ErrorService } from './core/services/error.service';
 
 @NgModule({
   declarations: [
@@ -47,6 +49,7 @@ import { LoadingService } from './core/services/loading.service';
     TestTakingComponent,
     TestResultComponent,
     QuestionAnswerComponent,
+    LoginComponent,
   ],
   imports: [
     BrowserModule,
@@ -64,6 +67,7 @@ import { LoadingService } from './core/services/loading.service';
     DashboardService,
     CandidateEventService,
     LoadingService,
+    ErrorService, // Ajouté ErrorService
 
     // HTTP Interceptors
     {

@@ -1,3 +1,4 @@
+// src/app/core/interceptors/loading.interceptor.ts
 import { Injectable } from '@angular/core';
 import {
   HttpRequest,

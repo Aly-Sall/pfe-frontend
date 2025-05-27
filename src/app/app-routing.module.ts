@@ -8,9 +8,11 @@ import { CandidatesComponent } from './shared/components/candidates/candidates.c
 import { CandidateFormComponent } from './shared/components/candidate-form/candidate-form.component';
 import { TestTakingComponent } from './shared/components/test-taking/test-taking.component';
 import { TestResultComponent } from './shared/components/test-result/test-result.component';
+import { LoginComponent } from './shared/components/login/login.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'tests', component: TestsComponent },
   { path: 'candidates', component: CandidatesComponent },
