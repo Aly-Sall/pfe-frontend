@@ -1,13 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { DashboardService } from '../../../core/services/dashboard.service';
-import { forkJoin } from 'rxjs';
-
-interface TestDisplay {
-  name: string;
-  candidates: number;
-  status: 'Active' | 'Completed';
-  averageScore: number;
-}
+import {
+  DashboardService,
+  DashboardStats,
+} from '../../../core/services/dashboard.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,12 +10,15 @@ interface TestDisplay {
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
-  totalCandidates: number = 0;
-  activeTests: number = 0;
-  averageScore: number = 0;
+  stats: DashboardStats = {
+    totalCandidates: 0,
+    activeTests: 0,
+    averageScore: 0,
+    recentTests: [],
+  };
 
-  recentTests: TestDisplay[] = [];
   isLoading: boolean = true;
+  error: string | null = null;
 
   constructor(private dashboardService: DashboardService) {}
 
@@ -30,19 +28,11 @@ export class DashboardComponent implements OnInit {
 
   loadDashboardData(): void {
     this.isLoading = true;
+    this.error = null;
 
-    // Utilisation de forkJoin pour combiner plusieurs observables
-    forkJoin({
-      candidates: this.dashboardService.getNombreCandidats(),
-      activeTests: this.dashboardService.getNombreTestsActifs(),
-      averageScore: this.dashboardService.getScoreMoyen(),
-      recentTests: this.dashboardService.getTestsRecents(),
-    }).subscribe({
-      next: (data) => {
-        this.totalCandidates = data.candidates;
-        this.activeTests = data.activeTests;
-        this.averageScore = data.averageScore;
-        this.recentTests = data.recentTests;
+    this.dashboardService.getDashboardStats().subscribe({
+      next: (stats) => {
+        this.stats = stats;
         this.isLoading = false;
       },
       error: (error) => {
@@ -50,8 +40,26 @@ export class DashboardComponent implements OnInit {
           'Erreur lors du chargement des données du tableau de bord',
           error
         );
+        this.error = 'Erreur lors du chargement des données';
         this.isLoading = false;
       },
     });
+  }
+
+  // Getters pour la compatibilité avec le template existant
+  get totalCandidates(): number {
+    return this.stats.totalCandidates;
+  }
+
+  get activeTests(): number {
+    return this.stats.activeTests;
+  }
+
+  get averageScore(): number {
+    return this.stats.averageScore;
+  }
+
+  get recentTests(): any[] {
+    return this.stats.recentTests;
   }
 }

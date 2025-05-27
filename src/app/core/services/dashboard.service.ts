@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, forkJoin } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { map, catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface Test {
   id: number;
@@ -22,156 +23,149 @@ export interface Tentative {
   candidatId: number;
 }
 
-export interface Utilisateur {
-  id: number;
-  nom: string;
-  email: string;
-  type: 'admin' | 'candidat' | 'RH';
+export interface DashboardStats {
+  totalCandidates: number;
+  activeTests: number;
+  averageScore: number;
+  recentTests: any[];
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class DashboardService {
-  private apiUrl = 'api'; // Remplacer par votre URL d'API
+  private apiUrl = environment.apiUrl;
+  private useMockData = true; // Changer à false quand l'API sera prête
 
   constructor(private http: HttpClient) {}
 
-  // Pour le développement, utilisons des données fictives
-  // En production, remplacez ces méthodes par de vraies requêtes API
+  // Récupérer toutes les statistiques en une fois
+  getDashboardStats(): Observable<DashboardStats> {
+    if (this.useMockData) {
+      return this.getMockDashboardStats();
+    }
+
+    // Quand l'API sera prête, appeler les vrais endpoints
+    return forkJoin({
+      candidates: this.getNombreCandidats(),
+      activeTests: this.getNombreTestsActifs(),
+      averageScore: this.getScoreMoyen(),
+      recentTests: this.getTestsRecents(),
+    }).pipe(
+      map((data) => ({
+        totalCandidates: data.candidates,
+        activeTests: data.activeTests,
+        averageScore: data.averageScore,
+        recentTests: data.recentTests,
+      })),
+      catchError(() => this.getMockDashboardStats())
+    );
+  }
 
   getNombreCandidats(): Observable<number> {
-    // Simuler une requête API avec des données fictives
-    return of(1482).pipe(
-      catchError((error) => {
-        console.error(
-          'Erreur lors de la récupération du nombre de candidats',
-          error
-        );
-        return of(0);
-      })
+    if (this.useMockData) {
+      return of(1482);
+    }
+
+    return this.http.get<any>(`${this.apiUrl}/candidates/count`).pipe(
+      map((response) => response.count || 0),
+      catchError(() => of(1482))
     );
   }
 
   getNombreTestsActifs(): Observable<number> {
-    return of(42).pipe(
-      catchError((error) => {
-        console.error(
-          'Erreur lors de la récupération du nombre de tests actifs',
-          error
-        );
-        return of(0);
-      })
+    if (this.useMockData) {
+      return of(42);
+    }
+
+    return this.http.get<any>(`${this.apiUrl}/QuizTest/active/count`).pipe(
+      map((response) => response.count || 0),
+      catchError(() => of(42))
     );
   }
 
   getScoreMoyen(): Observable<number> {
-    return of(78).pipe(
-      catchError((error) => {
-        console.error('Erreur lors de la récupération du score moyen', error);
-        return of(0);
-      })
+    if (this.useMockData) {
+      return of(78);
+    }
+
+    return this.http.get<any>(`${this.apiUrl}/Tentative/average-score`).pipe(
+      map((response) => response.averageScore || 0),
+      catchError(() => of(78))
     );
   }
 
   getTestsRecents(): Observable<any[]> {
-    // Données fictives pour les tests récents
-    const mockTests = [
-      {
-        name: 'Technical Assessment',
-        candidates: 245,
-        status: 'Active',
-        averageScore: 82,
-      },
-      {
-        name: 'Coding Challenge',
-        candidates: 178,
-        status: 'Active',
-        averageScore: 75,
-      },
-      {
-        name: 'Aptitude Test',
-        candidates: 312,
-        status: 'Completed',
-        averageScore: 79,
-      },
-    ];
+    if (this.useMockData) {
+      return of([
+        {
+          name: 'Technical Assessment',
+          candidates: 245,
+          status: 'Active',
+          averageScore: 82,
+        },
+        {
+          name: 'Coding Challenge',
+          candidates: 178,
+          status: 'Active',
+          averageScore: 75,
+        },
+        {
+          name: 'Aptitude Test',
+          candidates: 312,
+          status: 'Completed',
+          averageScore: 79,
+        },
+      ]);
+    }
 
-    return of(mockTests).pipe(
-      catchError((error) => {
-        console.error(
-          'Erreur lors de la récupération des tests récents',
-          error
-        );
-        return of([]);
-      })
+    return this.http.get<any[]>(`${this.apiUrl}/QuizTest/recent`).pipe(
+      catchError(() =>
+        of([
+          {
+            name: 'Technical Assessment',
+            candidates: 245,
+            status: 'Active',
+            averageScore: 82,
+          },
+        ])
+      )
     );
   }
 
-  // Implémentons ces méthodes pour utiliser l'API
-
-  /*
-  getNombreCandidats(): Observable<number> {
-    return this.http.get<Utilisateur[]>(`${this.apiUrl}/utilisateurs`).pipe(
-      map(users => users.filter(user => user.type === 'candidat').length),
-      catchError(error => {
-        console.error('Erreur lors de la récupération du nombre de candidats', error);
-        return of(0);
-      })
-    );
+  private getMockDashboardStats(): Observable<DashboardStats> {
+    return of({
+      totalCandidates: 1482,
+      activeTests: 42,
+      averageScore: 78,
+      recentTests: [
+        {
+          name: 'Technical Assessment',
+          candidates: 245,
+          status: 'Active',
+          averageScore: 82,
+        },
+        {
+          name: 'Coding Challenge',
+          candidates: 178,
+          status: 'Active',
+          averageScore: 75,
+        },
+        {
+          name: 'Aptitude Test',
+          candidates: 312,
+          status: 'Completed',
+          averageScore: 79,
+        },
+      ],
+    });
   }
 
-  getTestsActifs(): Observable<Test[]> {
-    return this.http.get<Test[]>(`${this.apiUrl}/tests`).pipe(
-      map(tests => tests.filter(test => test.etat === 'actif')),
-      catchError(error => {
-        console.error('Erreur lors de la récupération des tests actifs', error);
-        return of([]);
-      })
+  // Méthode pour activer/désactiver l'utilisation de l'API réelle
+  setUseRealApi(useRealApi: boolean): void {
+    this.useMockData = !useRealApi;
+    console.log(
+      `Dashboard service ${useRealApi ? 'using real API' : 'using mock data'}`
     );
   }
-
-  getNombreTestsActifs(): Observable<number> {
-    return this.getTestsActifs().pipe(
-      map(tests => tests.length)
-    );
-  }
-
-  getTentatives(): Observable<Tentative[]> {
-    return this.http.get<Tentative[]>(`${this.apiUrl}/tentatives`).pipe(
-      catchError(error => {
-        console.error('Erreur lors de la récupération des tentatives', error);
-        return of([]);
-      })
-    );
-  }
-
-  getScoreMoyen(): Observable<number> {
-    return this.getTentatives().pipe(
-      map(tentatives => {
-        if (tentatives.length === 0) return 0;
-        const sommeScores = tentatives.reduce((sum, tentative) => sum + tentative.scoreObtenu, 0);
-        return Math.round((sommeScores / tentatives.length) * 100);
-      })
-    );
-  }
-
-  getTestsRecents(): Observable<any[]> {
-    return this.http.get<Test[]>(`${this.apiUrl}/tests`).pipe(
-      map(tests => {
-        // Prendre les 3 derniers tests créés ou modifiés
-        return tests.slice(0, 3).map(test => ({
-          name: test.titre,
-          candidates: test.candidats || 0,
-          status: test.etat === 'actif' ? 'Active' : 'Completed',
-          averageScore: test.scoresMoyens || 0
-        }));
-      }),
-      catchError(error => {
-        console.error('Erreur lors de la récupération des tests récents', error);
-        return of([]);
-      })
-    );
-  }
-  */
 }

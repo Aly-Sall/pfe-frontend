@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, tap, catchError, mergeMap } from 'rxjs/operators';
-import { TestService, TestDto, QuestionDto, ResponseDto } from './test.service';
+import { environment } from '../../../environments/environment';
+import { TestService, TestDto, QuestionDto } from './test.service';
 
 export interface TestAttemptDto {
   id?: number;
@@ -43,12 +44,20 @@ export interface SurveillanceDto {
   captureEcran: string;
 }
 
+export interface ApiResponse {
+  isSuccess: boolean;
+  error?: string;
+  errors?: string[];
+  id?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class TestAttemptService {
-  private apiUrl = 'api/Tentative';
-  private surveillanceApiUrl = 'api/Surveillance';
+  private tentativeApiUrl = `${environment.apiUrl}/Tentative`;
+  private surveillanceApiUrl = `${environment.apiUrl}/Surveillance`;
+  private responseApiUrl = `${environment.apiUrl}/CandidateAnswer`;
 
   // Store user answers locally during the test
   private userAnswers: UserAnswerDto[] = [];
@@ -72,15 +81,14 @@ export class TestAttemptService {
 
   // Start a new test attempt
   startTest(testId: number): Observable<TestAttemptDto> {
-    const attemptData: TestAttemptDto = {
+    const attemptData = {
+      passingDate: new Date().toISOString(),
       testId: testId,
-      passingDate: new Date(),
     };
 
-    return this.http.post<any>(this.apiUrl, attemptData).pipe(
+    return this.http.post<ApiResponse>(this.tentativeApiUrl, attemptData).pipe(
       map((response) => {
-        if (response.isSuccess) {
-          // Extract the attempt with its ID from the response
+        if (response.isSuccess && response.id) {
           const attempt: TestAttemptDto = {
             id: response.id,
             testId: testId,
@@ -101,24 +109,42 @@ export class TestAttemptService {
     );
   }
 
-  // Save an answer during the test (local storage)
+  // Save an answer during the test (local storage + API call)
   saveAnswer(questionId: number, selectedAnswerIds: number[]): void {
-    // Check if answer already exists for this question
+    // Update local storage
     const existingAnswerIndex = this.userAnswers.findIndex(
       (a) => a.questionId === questionId
     );
 
     if (existingAnswerIndex >= 0) {
-      // Update existing answer
       this.userAnswers[existingAnswerIndex].selectedAnswerIds =
         selectedAnswerIds;
     } else {
-      // Add new answer
       this.userAnswers.push({ questionId, selectedAnswerIds });
     }
 
-    // Save to localStorage as a backup in case of browser refresh
+    // Save to localStorage as backup
     this.saveAnswersToLocalStorage();
+
+    // Save each answer to the API
+    selectedAnswerIds.forEach((choiceId) => {
+      const responseData = {
+        choiceId: choiceId,
+        questionId: questionId,
+        quizTestId: this.currentAttemptSubject.value?.testId || 0,
+      };
+
+      this.http.post<ApiResponse>(this.responseApiUrl, responseData).subscribe({
+        next: (response) => {
+          if (!response.isSuccess) {
+            console.error('Failed to save answer:', response.error);
+          }
+        },
+        error: (error) => {
+          console.error('Error saving answer:', error);
+        },
+      });
+    });
   }
 
   // Get the saved answer for a question
@@ -134,34 +160,32 @@ export class TestAttemptService {
       return of({ isSuccess: false, error: 'No active test attempt' });
     }
 
-    const surveillanceData: SurveillanceDto = {
-      tentativeId: currentAttempt.id,
+    const surveillanceData = {
       captureEcran: captureData,
+      tentativeId: currentAttempt.id,
     };
 
-    return this.http.post<any>(this.surveillanceApiUrl, surveillanceData);
+    return this.http
+      .post<ApiResponse>(this.surveillanceApiUrl, surveillanceData)
+      .pipe(
+        catchError((error) => {
+          console.error('Error submitting surveillance:', error);
+          return of({
+            isSuccess: false,
+            error: 'Failed to submit surveillance',
+          });
+        })
+      );
   }
 
   // Complete the test and calculate results
   completeTest(): Observable<TestResultDto> {
     const currentAttempt = this.currentAttemptSubject.value;
     if (!currentAttempt || !currentAttempt.id) {
-      return of({
-        tentativeId: -1,
-        testId: -1,
-        testTitle: '',
-        totalQuestions: 0,
-        correctAnswers: 0,
-        scorePercentage: 0,
-        passingDate: new Date(),
-        questionResults: [],
-      });
+      throw new Error('No active test attempt');
     }
 
-    // In a real implementation, you would send all answers to the server
-    // and get the results back. Since we don't have that endpoint, we'll
-    // calculate results locally based on test data.
-
+    // Calculate results locally (since there's no backend endpoint for this yet)
     return this.calculateTestResults(
       currentAttempt.id,
       currentAttempt.testId
@@ -170,14 +194,14 @@ export class TestAttemptService {
         this.testResultSubject.next(result);
         this.stopTimer();
         this.clearLocalStorage();
-        // We would typically submit the final score to the server here
+        // TODO: Submit final score to backend if needed
       })
     );
   }
 
   // Start the test timer
   startTimer(durationMinutes: number): void {
-    this.stopTimer(); // Stop any existing timer
+    this.stopTimer();
 
     const durationMs = durationMinutes * 60 * 1000;
     const endTime = Date.now() + durationMs;
@@ -225,7 +249,6 @@ export class TestAttemptService {
     if (savedData) {
       try {
         this.userAnswers = JSON.parse(savedData);
-        // Also restore the current attempt
         this.currentAttemptSubject.next({
           id: tentativeId,
           testId: testId,
@@ -269,10 +292,9 @@ export class TestAttemptService {
     testId: number
   ): Observable<TestResultDto> {
     return this.testService.getTestById(testId).pipe(
-      map((test) => {
+      mergeMap((test) => {
         return this.testService.getTestQuestions(testId).pipe(
           map((questions) => {
-            // Parse the correct answers for each question
             const questionResults: QuestionResultDto[] = questions.map(
               (question) => {
                 const correctAnswerIds = this.parseCorrectAnswerIds(
@@ -296,11 +318,11 @@ export class TestAttemptService {
 
                 // Get answer content
                 const selectedAnswers = this.getAnswerContent(
-                  question.reponses || [],
+                  question.choices || [],
                   userAnswerIds
                 );
                 const correctAnswers = this.getAnswerContent(
-                  question.reponses || [],
+                  question.choices || [],
                   correctAnswerIds
                 );
 
@@ -342,16 +364,19 @@ export class TestAttemptService {
       catchError((error) => {
         console.error('Error calculating test results:', error);
         throw error;
-      }),
-      // Flatten the observable
-      mergeMap((resultObs) => resultObs)
+      })
     );
   }
 
   // Parse correct answer IDs from string
   private parseCorrectAnswerIds(idsString: string): number[] {
     try {
-      return idsString.split(',').map((id) => parseInt(id.trim()));
+      // Remove brackets and split by comma
+      const cleanString = idsString.replace(/[\[\]]/g, '');
+      return cleanString
+        .split(',')
+        .map((id) => parseInt(id.trim()))
+        .filter((id) => !isNaN(id));
     } catch (e) {
       console.error('Error parsing correct answer IDs:', e);
       return [];
@@ -360,11 +385,11 @@ export class TestAttemptService {
 
   // Get answer content based on IDs
   private getAnswerContent(
-    responses: ResponseDto[],
+    choices: Array<{ id: number; content: string }>,
     answerIds: number[]
   ): string[] {
-    return responses
-      .filter((r) => answerIds.includes(r.id || 0))
-      .map((r) => r.content);
+    return choices
+      .filter((choice) => answerIds.includes(choice.id))
+      .map((choice) => choice.content);
   }
 }
