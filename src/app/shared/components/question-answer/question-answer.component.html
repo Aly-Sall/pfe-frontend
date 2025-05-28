@@ -1,40 +1,37 @@
 <div class="question-answer-container">
   <div
-    *ngIf="!question.reponses || question.reponses.length === 0"
+    *ngIf="!question.choices || question.choices.length === 0"
     class="no-options"
   >
     No answer options available for this question.
   </div>
 
   <div
-    *ngIf="question.reponses && question.reponses.length > 0"
+    *ngIf="question.choices && question.choices.length > 0"
     class="answer-options"
   >
     <div
-      *ngFor="let response of question.reponses"
+      *ngFor="let choice of question.choices"
       class="answer-option"
-      [class.selected]="isAnswerSelected(response.id || 0)"
-      (click)="toggleAnswerSelection(response.id || 0)"
+      [class.selected]="isAnswerSelected(choice.id || 0)"
+      (click)="toggleAnswerSelection(choice.id || 0)"
     >
       <div class="option-indicator">
         <div *ngIf="question.type === 0" class="radio-indicator">
           <div
             class="inner-circle"
-            *ngIf="isAnswerSelected(response.id || 0)"
+            *ngIf="isAnswerSelected(choice.id || 0)"
           ></div>
         </div>
         <div
           *ngIf="question.type === 1"
           class="checkbox-indicator"
-          [class.checked]="isAnswerSelected(response.id || 0)"
+          [class.checked]="isAnswerSelected(choice.id || 0)"
         >
-          <i
-            *ngIf="isAnswerSelected(response.id || 0)"
-            class="fas fa-check"
-          ></i>
+          <i *ngIf="isAnswerSelected(choice.id || 0)" class="fas fa-check"></i>
         </div>
       </div>
-      <div class="option-content">{{ response.content }}</div>
+      <div class="option-content">{{ choice.content }}</div>
     </div>
   </div>
 </div>

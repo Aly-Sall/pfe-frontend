@@ -295,12 +295,24 @@ export class TestAttemptService {
       mergeMap((test) => {
         return this.testService.getTestQuestions(testId).pipe(
           map((questions) => {
+            console.log('Questions data:', questions); // Debug log
+
             const questionResults: QuestionResultDto[] = questions.map(
               (question) => {
+                console.log('Processing question:', question); // Debug log
+                console.log(
+                  'listOfCorrectAnswerIds:',
+                  question.listOfCorrectAnswerIds
+                ); // Debug log
+                console.log('choices:', question.choices); // Debug log
+
                 const correctAnswerIds = this.parseCorrectAnswerIds(
                   question.listOfCorrectAnswerIds || ''
                 );
+                console.log('Parsed correctAnswerIds:', correctAnswerIds); // Debug log
+
                 const userAnswerIds = this.getAnswer(question.id || 0);
+                console.log('User answer IDs:', userAnswerIds); // Debug log
 
                 // Determine if the answer is correct
                 let isCorrect = false;
@@ -326,7 +338,10 @@ export class TestAttemptService {
                   correctAnswerIds
                 );
 
-                return {
+                console.log('Selected answers:', selectedAnswers); // Debug log
+                console.log('Correct answers:', correctAnswers); // Debug log
+
+                const result = {
                   questionId: question.id || 0,
                   questionContent: question.content,
                   isCorrect: isCorrect,
@@ -335,6 +350,9 @@ export class TestAttemptService {
                   selectedAnswers: selectedAnswers,
                   correctAnswers: correctAnswers,
                 };
+
+                console.log('Question result:', result); // Debug log
+                return result;
               }
             );
 
@@ -348,7 +366,7 @@ export class TestAttemptService {
                 ? Math.round((correctAnswers / totalQuestions) * 100)
                 : 0;
 
-            return {
+            const finalResult = {
               tentativeId: tentativeId,
               testId: testId,
               testTitle: test.title,
@@ -358,6 +376,9 @@ export class TestAttemptService {
               passingDate: new Date(),
               questionResults: questionResults,
             };
+
+            console.log('Final test result:', finalResult); // Debug log
+            return finalResult;
           })
         );
       }),
@@ -368,28 +389,72 @@ export class TestAttemptService {
     );
   }
 
-  // Parse correct answer IDs from string
+  // Parse correct answer IDs from string - CORRIGÉ
   private parseCorrectAnswerIds(idsString: string): number[] {
+    console.log('Parsing IDs from string:', idsString); // Debug log
+
+    if (!idsString || idsString.trim() === '') {
+      console.log('Empty IDs string'); // Debug log
+      return [];
+    }
+
     try {
-      // Remove brackets and split by comma
-      const cleanString = idsString.replace(/[\[\]]/g, '');
-      return cleanString
+      // Remove brackets and any whitespace
+      let cleanString = idsString.replace(/[\[\]]/g, '').trim();
+      console.log('Clean string:', cleanString); // Debug log
+
+      if (cleanString === '') {
+        return [];
+      }
+
+      // Split by comma and parse integers
+      const ids = cleanString
         .split(',')
-        .map((id) => parseInt(id.trim()))
+        .map((id) => {
+          const trimmed = id.trim();
+          const parsed = parseInt(trimmed);
+          console.log(`Parsing "${trimmed}" -> ${parsed}`); // Debug log
+          return parsed;
+        })
         .filter((id) => !isNaN(id));
+
+      console.log('Final parsed IDs:', ids); // Debug log
+      return ids;
     } catch (e) {
       console.error('Error parsing correct answer IDs:', e);
       return [];
     }
   }
 
-  // Get answer content based on IDs
+  // Get answer content based on IDs - CORRIGÉ
   private getAnswerContent(
     choices: Array<{ id: number; content: string }>,
     answerIds: number[]
   ): string[] {
-    return choices
-      .filter((choice) => answerIds.includes(choice.id))
+    console.log('Getting answer content for choices:', choices); // Debug log
+    console.log('Answer IDs:', answerIds); // Debug log
+
+    if (
+      !choices ||
+      !Array.isArray(choices) ||
+      !answerIds ||
+      !Array.isArray(answerIds)
+    ) {
+      console.log('Invalid choices or answerIds'); // Debug log
+      return [];
+    }
+
+    const results = choices
+      .filter((choice) => {
+        const isIncluded = answerIds.includes(choice.id);
+        console.log(
+          `Choice ${choice.id} (${choice.content}) included: ${isIncluded}`
+        ); // Debug log
+        return isIncluded;
+      })
       .map((choice) => choice.content);
+
+    console.log('Answer content results:', results); // Debug log
+    return results;
   }
 }

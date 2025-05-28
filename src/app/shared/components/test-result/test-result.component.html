@@ -65,13 +65,19 @@
           </div>
 
           <div class="answer-section">
+            <!-- Votre réponse -->
             <div class="your-answer">
               <div class="answer-label">Your Answer:</div>
               <div
                 class="answer-content"
                 [ngClass]="{ incorrect: !questionResult.isCorrect }"
               >
-                <ng-container *ngIf="questionResult.selectedAnswers.length > 0">
+                <ng-container
+                  *ngIf="
+                    questionResult.selectedAnswers &&
+                    questionResult.selectedAnswers.length > 0
+                  "
+                >
                   <div
                     *ngFor="let answer of questionResult.selectedAnswers"
                     class="answer-item"
@@ -80,7 +86,10 @@
                   </div>
                 </ng-container>
                 <div
-                  *ngIf="questionResult.selectedAnswers.length === 0"
+                  *ngIf="
+                    !questionResult.selectedAnswers ||
+                    questionResult.selectedAnswers.length === 0
+                  "
                   class="no-answer"
                 >
                   No answer provided
@@ -88,14 +97,34 @@
               </div>
             </div>
 
-            <div class="correct-answer" *ngIf="!questionResult.isCorrect">
+            <!-- Réponse correcte -->
+            <div class="correct-answer">
               <div class="answer-label">Correct Answer:</div>
               <div class="answer-content correct">
-                <div
-                  *ngFor="let answer of questionResult.correctAnswers"
-                  class="answer-item"
+                <ng-container
+                  *ngIf="
+                    questionResult.correctAnswers &&
+                    questionResult.correctAnswers.length > 0
+                  "
                 >
-                  {{ answer }}
+                  <div
+                    *ngFor="let answer of questionResult.correctAnswers"
+                    class="answer-item"
+                  >
+                    {{ answer }}
+                  </div>
+                </ng-container>
+                <div
+                  *ngIf="
+                    !questionResult.correctAnswers ||
+                    questionResult.correctAnswers.length === 0
+                  "
+                  class="no-answer"
+                >
+                  <strong>Debug Info:</strong><br />
+                  Correct Answer IDs: {{ questionResult.correctAnswerIds | json
+                  }}<br />
+                  Selected Answer IDs: {{ questionResult.userAnswerIds | json }}
                 </div>
               </div>
             </div>
@@ -104,5 +133,14 @@
       </div>
     </div>
   </div>
+
+  <!-- Debug section - à supprimer après résolution -->
+  <div
+    *ngIf="result && showDetailedResults"
+    class="debug-section"
+    style="background: #f0f0f0; padding: 20px; margin: 20px; border-radius: 5px"
+  >
+    <h3>Debug Information:</h3>
+    <pre>{{ result | json }}</pre>
+  </div>
 </div>
-<p>test-result works!</p>

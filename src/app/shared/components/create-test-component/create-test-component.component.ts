@@ -1,3 +1,4 @@
+// src/app/shared/components/create-test-component/create-test-component.component.ts
 import {
   Component,
   OnInit,
@@ -9,7 +10,16 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
-// Interface pour TestDto (à définir dans votre service ou à importer)
+// Interface alignée avec le backend CreateTestCommand
+interface CreateTestCommand {
+  title: string;
+  category: number; // 0: None, 1: General, 2: Technical
+  mode: number; // 0: Training, 1: Recruitment
+  tryAgain: boolean;
+  showTimer: boolean;
+  level: number; // 0: Easy, 1: Medium, 2: Hard
+}
+
 interface TestDto {
   id?: number;
   title: string;
@@ -27,35 +37,46 @@ interface TestDto {
   styleUrls: ['./create-test-component.component.scss'],
 })
 export class CreateTestComponentComponent implements OnInit, OnChanges {
-  @Input() test?: TestDto; // Ajout de l'input test pour l'édition
+  @Input() test?: TestDto;
   @Output() cancel = new EventEmitter<void>();
-  @Output() create = new EventEmitter<any>();
-  @Output() update = new EventEmitter<TestDto>(); // Nouvel output pour les mises à jour
+  @Output() create = new EventEmitter<CreateTestCommand>();
+  @Output() update = new EventEmitter<TestDto>();
 
   testForm: FormGroup;
   isEditMode: boolean = false;
 
-  testTypes = [
-    'Technical Assessment',
-    'Coding Challenge',
-    'Aptitude Test',
-    'Behavioral Assessment',
+  // Options alignées avec les enums du backend
+  categories = [
+    { value: 0, label: 'None' },
+    { value: 1, label: 'General' },
+    { value: 2, label: 'Technical' },
+  ];
+
+  modes = [
+    { value: 0, label: 'Training' },
+    { value: 1, label: 'Recruitment' },
+  ];
+
+  levels = [
+    { value: 0, label: 'Easy' },
+    { value: 1, label: 'Medium' },
+    { value: 2, label: 'Hard' },
   ];
 
   constructor(private fb: FormBuilder) {
+    // FormGroup avec tous les champs de l'interface utilisateur
     this.testForm = this.fb.group({
-      testType: ['Technical Assessment', Validators.required],
-      testName: ['', Validators.required],
-      description: [''],
-      duration: ['', [Validators.required, Validators.min(1)]],
-      totalPoints: ['', [Validators.required, Validators.min(1)]],
-      startDate: [''],
-      dueDate: [''],
-      settings: this.fb.group({
-        randomizeQuestions: [true],
-        showResultsImmediately: [false],
-        allowMultipleAttempts: [false],
-      }),
+      title: ['', [Validators.required, Validators.maxLength(100)]],
+      description: [''], // Champ UI seulement
+      category: [1, Validators.required], // Default to General
+      duration: ['', [Validators.required, Validators.min(1)]], // Champ UI seulement
+      totalPoints: ['', [Validators.required, Validators.min(1)]], // Champ UI seulement
+      mode: [0, Validators.required], // Default to Training
+      level: [0, Validators.required], // Default to Easy
+      startDate: [''], // Champ UI seulement
+      dueDate: [''], // Champ UI seulement
+      tryAgain: [false], // Envoyé au backend
+      showTimer: [true], // Envoyé au backend
     });
   }
 
@@ -74,44 +95,51 @@ export class CreateTestComponentComponent implements OnInit, OnChanges {
     if (this.test) {
       // En mode édition, remplir le formulaire avec les données du test
       this.testForm.patchValue({
-        testType: this.getTestTypeLabel(this.test.category),
-        testName: this.test.title,
-        // Les autres propriétés comme la description ne sont pas disponibles dans le modèle TestDto
-        settings: {
-          allowMultipleAttempts: this.test.tryAgain,
-          // Les autres propriétés de settings peuvent être ajoutées si disponibles
-        },
+        title: this.test.title,
+        category: this.test.category,
+        mode: this.test.mode,
+        level: this.test.level,
+        tryAgain: this.test.tryAgain,
+        showTimer: this.test.showTimer,
+        // Les autres champs restent vides car ils ne viennent pas du backend
+        description: '',
+        duration: '',
+        totalPoints: '',
+        startDate: '',
+        dueDate: '',
       });
-    }
-  }
-
-  getTestTypeLabel(category: number): string {
-    // Conversion de la catégorie en libellé
-    switch (category) {
-      case 1:
-        return 'Technical Assessment';
-      case 2:
-        return 'Coding Challenge';
-      default:
-        return 'Technical Assessment';
     }
   }
 
   onSubmit(): void {
     if (this.testForm.valid) {
+      const formValue = this.testForm.value;
+
       if (this.isEditMode && this.test) {
-        // Mode mise à jour
+        // Mode mise à jour - Envoyer seulement les champs supportés par le backend
         const updatedTest: TestDto = {
           ...this.test,
-          title: this.testForm.value.testName,
-          category: this.getCategoryFromType(this.testForm.value.testType),
-          tryAgain: this.testForm.value.settings.allowMultipleAttempts,
-          // Mettre à jour d'autres propriétés selon les besoins
+          title: formValue.title,
+          category: formValue.category,
+          mode: formValue.mode,
+          level: formValue.level,
+          tryAgain: formValue.tryAgain,
+          showTimer: formValue.showTimer,
         };
         this.update.emit(updatedTest);
       } else {
-        // Mode création
-        this.create.emit(this.testForm.value);
+        // Mode création - Envoyer seulement les champs attendus par le backend
+        const createCommand: CreateTestCommand = {
+          title: formValue.title,
+          category: formValue.category,
+          mode: formValue.mode,
+          level: formValue.level,
+          tryAgain: formValue.tryAgain,
+          showTimer: formValue.showTimer,
+        };
+
+        console.log('Sending to backend:', createCommand);
+        this.create.emit(createCommand);
       }
     } else {
       // Marquer tous les champs comme touchés pour afficher les erreurs
@@ -122,19 +150,25 @@ export class CreateTestComponentComponent implements OnInit, OnChanges {
     }
   }
 
-  getCategoryFromType(type: string): number {
-    // Conversion du libellé en catégorie
-    switch (type) {
-      case 'Technical Assessment':
-        return 1;
-      case 'Coding Challenge':
-        return 2;
-      default:
-        return 0;
-    }
-  }
-
   onCancel(): void {
     this.cancel.emit();
+  }
+
+  // Helper pour obtenir le libellé d'une catégorie
+  getCategoryLabel(categoryValue: number): string {
+    const category = this.categories.find((c) => c.value === categoryValue);
+    return category ? category.label : 'Unknown';
+  }
+
+  // Helper pour obtenir le libellé d'un mode
+  getModeLabel(modeValue: number): string {
+    const mode = this.modes.find((m) => m.value === modeValue);
+    return mode ? mode.label : 'Unknown';
+  }
+
+  // Helper pour obtenir le libellé d'un niveau
+  getLevelLabel(levelValue: number): string {
+    const level = this.levels.find((l) => l.value === levelValue);
+    return level ? level.label : 'Unknown';
   }
 }

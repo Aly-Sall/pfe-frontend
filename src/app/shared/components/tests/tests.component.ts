@@ -7,43 +7,13 @@ import { TestService, TestDto } from '../../../core/services/test.service';
   styleUrls: ['./tests.component.scss'],
 })
 export class TestsComponent implements OnInit {
-  tests: TestDto[] = [
-    {
-      id: 1,
-      title: 'Technical Assessment',
-      category: 1,
-      mode: 0,
-      isActive: true,
-      showTimer: true,
-      tryAgain: false,
-      level: 0,
-    },
-    {
-      id: 2,
-      title: 'Coding Challenge',
-      category: 2,
-      mode: 0,
-      isActive: true,
-      showTimer: true,
-      tryAgain: true,
-      level: 1,
-    },
-    {
-      id: 3,
-      title: 'Aptitude Test',
-      category: 1,
-      mode: 0,
-      isActive: false,
-      showTimer: false,
-      tryAgain: false,
-      level: 2,
-    },
-  ];
+  tests: TestDto[] = [];
   isLoading: boolean = false;
   showCreateForm: boolean = false;
   showDetailView: boolean = false;
   selectedTest: TestDto | null = null;
   testToEdit: TestDto | null = null;
+  error: string | null = null;
 
   constructor(private testService: TestService) {}
 
@@ -51,15 +21,61 @@ export class TestsComponent implements OnInit {
     this.loadTests();
   }
 
+  // Charger tous les tests depuis l'API
   loadTests(): void {
     this.isLoading = true;
+    this.error = null;
 
-    // Simuler le chargement depuis l'API
-    setTimeout(() => {
-      // Dans une implémentation réelle, vous appelleriez votre service ici
-      // this.testService.getAllTests().subscribe(...)
-      this.isLoading = false;
-    }, 500);
+    this.testService.getAllTests().subscribe({
+      next: (tests) => {
+        this.tests = tests;
+        this.isLoading = false;
+        console.log('Tests loaded successfully:', tests);
+      },
+      error: (error) => {
+        console.error('Error loading tests:', error);
+        this.error = 'Erreur lors du chargement des tests';
+        this.isLoading = false;
+        // En cas d'erreur, utiliser des données de démonstration
+        this.loadMockData();
+      },
+    });
+  }
+
+  // Données de démonstration en cas d'erreur API
+  private loadMockData(): void {
+    this.tests = [
+      {
+        id: 1,
+        title: 'Technical Assessment',
+        category: 1,
+        mode: 0,
+        isActive: true,
+        showTimer: true,
+        tryAgain: false,
+        level: 0,
+      },
+      {
+        id: 2,
+        title: 'Coding Challenge',
+        category: 2,
+        mode: 0,
+        isActive: true,
+        showTimer: true,
+        tryAgain: true,
+        level: 1,
+      },
+      {
+        id: 3,
+        title: 'Aptitude Test',
+        category: 1,
+        mode: 0,
+        isActive: false,
+        showTimer: false,
+        tryAgain: false,
+        level: 2,
+      },
+    ];
   }
 
   // Afficher les détails d'un test
@@ -71,7 +87,7 @@ export class TestsComponent implements OnInit {
 
   // Créer un nouveau test
   createNewTest(): void {
-    this.testToEdit = null; // S'assurer qu'on n'est pas en mode édition
+    this.testToEdit = null;
     this.showCreateForm = true;
     this.showDetailView = false;
   }
@@ -89,89 +105,186 @@ export class TestsComponent implements OnInit {
     this.testToEdit = null;
   }
 
-  // Gérer la création d'un test
+  // Gérer la création d'un test avec l'API
   handleCreateTest(testData: any): void {
     console.log('Creating test with data:', testData);
 
-    // Dans une implémentation réelle, vous appelleriez votre service ici
-    // this.testService.createTest(newTest).subscribe(...)
+    this.isLoading = true;
 
-    // Simuler l'ajout d'un nouveau test
+    // Mapper les données du formulaire vers TestDto
     const newTest: TestDto = {
-      id: this.tests.length + 1,
       title: testData.testName,
       category: this.getCategoryFromType(testData.testType),
-      mode: 0,
-      isActive: true,
-      showTimer: true,
+      mode: 0, // Mode Training par défaut
       tryAgain: testData.settings?.allowMultipleAttempts || false,
-      level: 0,
+      showTimer: true, // Timer activé par défaut
+      level: 0, // Niveau Easy par défaut
     };
 
-    this.tests.unshift(newTest);
-    this.showCreateForm = false;
-    this.testToEdit = null;
+    this.testService.createTest(newTest).subscribe({
+      next: (response) => {
+        console.log('Test created successfully:', response);
+
+        if (response.isSuccess && response.id) {
+          // Ajouter le nouveau test à la liste locale avec l'ID retourné
+          const createdTest: TestDto = {
+            ...newTest,
+            id: response.id,
+            isActive: true,
+          };
+
+          this.tests.unshift(createdTest);
+          this.showCreateForm = false;
+          this.testToEdit = null;
+          this.error = null;
+        } else {
+          this.error = response.error || 'Erreur lors de la création du test';
+        }
+
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error creating test:', error);
+        this.error = 'Erreur lors de la création du test';
+        this.isLoading = false;
+      },
+    });
   }
 
-  // Gérer la mise à jour d'un test
+  // Gérer la mise à jour d'un test avec l'API
   handleUpdateTest(updatedTest: TestDto): void {
     console.log('Updating test:', updatedTest);
 
-    // Dans une implémentation réelle, vous appelleriez votre service ici
-    // this.testService.updateTest(updatedTest).subscribe(...)
-
-    // Simuler la mise à jour dans la liste locale
-    const index = this.tests.findIndex((t) => t.id === updatedTest.id);
-    if (index !== -1) {
-      this.tests[index] = updatedTest;
+    if (!updatedTest.id) {
+      this.error = 'Impossible de mettre à jour le test: ID manquant';
+      return;
     }
 
-    this.showCreateForm = false;
-    this.testToEdit = null;
+    this.isLoading = true;
+
+    this.testService.updateTest(updatedTest).subscribe({
+      next: () => {
+        console.log('Test updated successfully');
+
+        // Mettre à jour le test dans la liste locale
+        const index = this.tests.findIndex((t) => t.id === updatedTest.id);
+        if (index !== -1) {
+          this.tests[index] = updatedTest;
+        }
+
+        // Mettre à jour le test sélectionné si c'est le même
+        if (this.selectedTest?.id === updatedTest.id) {
+          this.selectedTest = updatedTest;
+        }
+
+        this.showCreateForm = false;
+        this.testToEdit = null;
+        this.error = null;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error updating test:', error);
+        this.error = 'Erreur lors de la mise à jour du test';
+        this.isLoading = false;
+      },
+    });
   }
 
   // Gérer la mise à jour d'un test depuis la vue détaillée
   handleTestUpdate(updatedTest: TestDto): void {
-    // Mise à jour du test dans la liste locale
-    const index = this.tests.findIndex((t) => t.id === updatedTest.id);
-    if (index !== -1) {
-      this.tests[index] = updatedTest;
-    }
-
-    // Mettre à jour le test sélectionné
-    this.selectedTest = updatedTest;
+    this.handleUpdateTest(updatedTest);
   }
 
-  // Supprimer un test
+  // Supprimer un test avec l'API
   deleteTest(test: TestDto): void {
-    console.log('Deleting test:', test);
-
-    if (confirm('Are you sure you want to delete this test?')) {
-      // Dans une implémentation réelle, vous appelleriez votre service ici
-      // this.testService.deleteTest(test.id).subscribe(...)
-
-      // Simuler la suppression
-      this.tests = this.tests.filter((t) => t.id !== test.id);
+    if (!test.id) {
+      this.error = 'Impossible de supprimer le test: ID manquant';
+      return;
     }
+
+    if (
+      confirm(`Êtes-vous sûr de vouloir supprimer le test "${test.title}" ?`)
+    ) {
+      this.isLoading = true;
+
+      this.testService.deleteTest(test.id).subscribe({
+        next: () => {
+          console.log('Test deleted successfully');
+
+          // Supprimer le test de la liste locale
+          this.tests = this.tests.filter((t) => t.id !== test.id);
+
+          // Fermer la vue détaillée si c'est le test supprimé
+          if (this.selectedTest?.id === test.id) {
+            this.selectedTest = null;
+            this.showDetailView = false;
+          }
+
+          this.error = null;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error deleting test:', error);
+          this.error = 'Erreur lors de la suppression du test';
+          this.isLoading = false;
+        },
+      });
+    }
+  }
+
+  // Actualiser la liste des tests
+  refreshTests(): void {
+    this.loadTests();
   }
 
   // Convertir le type de test en catégorie
   getCategoryFromType(type: string): number {
     switch (type) {
       case 'Technical Assessment':
-        return 1;
+        return 2; // Technical
       case 'Coding Challenge':
-        return 2;
+        return 2; // Technical
       case 'Aptitude Test':
-        return 1;
+        return 1; // General
       case 'Behavioral Assessment':
-        return 2;
+        return 1; // General
       default:
-        return 0;
+        return 0; // None
+    }
+  }
+
+  // Convertir la catégorie en libellé
+  getCategoryLabel(category: number): string {
+    switch (category) {
+      case 1:
+        return 'General';
+      case 2:
+        return 'Technical';
+      default:
+        return 'None';
+    }
+  }
+
+  // Convertir le niveau en libellé
+  getLevelLabel(level: number): string {
+    switch (level) {
+      case 0:
+        return 'Easy';
+      case 1:
+        return 'Medium';
+      case 2:
+        return 'Hard';
+      default:
+        return 'Unknown';
     }
   }
 
   get filteredTests(): TestDto[] {
     return this.tests;
+  }
+
+  // Optimisation des performances pour ngFor
+  trackByTestId(index: number, test: TestDto): number {
+    return test.id || index;
   }
 }
