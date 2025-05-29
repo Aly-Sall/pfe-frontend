@@ -16,15 +16,19 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'tests', component: TestsComponent },
+  {
+    path: 'questions',
+    component: QuestionManagementComponent,
+  }, // Sans testId - affichera la liste des tests
+  {
+    path: 'question-management/:testId',
+    component: QuestionManagementComponent,
+  }, // Avec testId - gestion des questions du test
   { path: 'candidates', component: CandidatesComponent },
   { path: 'candidates/new', component: CandidateFormComponent },
   { path: 'candidates/:id/edit', component: CandidateFormComponent },
   { path: 'take-test/:id', component: TestTakingComponent },
   { path: 'test-result', component: TestResultComponent },
-  {
-    path: 'question-management/:testId',
-    component: QuestionManagementComponent,
-  },
   { path: '**', redirectTo: '/dashboard' },
 ];
 

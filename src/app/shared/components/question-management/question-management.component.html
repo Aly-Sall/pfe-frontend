@@ -1,338 +1,438 @@
 <div class="question-management-container">
-  <!-- En-tête -->
-  <div class="header">
-    <h2>Questions du Test: {{ test.title }}</h2>
-    <div class="header-actions">
-      <button
-        class="btn btn-secondary"
-        (click)="showAssignQuestionForm()"
-        [disabled]="isLoading"
-        *ngIf="!showCreateForm && !showAssignForm"
-      >
-        <i class="fas fa-link"></i>
-        Assigner une Question
+  <!-- Mode Liste des Tests -->
+  <div *ngIf="mode === 'list'" class="tests-list-mode">
+    <div class="header">
+      <h1>Question Management</h1>
+      <p class="subtitle">Select a test to manage its questions</p>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error" class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+      <button class="btn btn-sm btn-outline-primary" (click)="loadTests()">
+        <i class="fas fa-refresh"></i> Retry
       </button>
-      <button
-        class="btn btn-primary"
-        (click)="showCreateQuestionForm()"
-        [disabled]="isLoading"
-        *ngIf="!showCreateForm && !showAssignForm"
-      >
+    </div>
+
+    <!-- Indicateur de chargement -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading tests...</p>
+    </div>
+
+    <!-- Message si aucun test -->
+    <div *ngIf="!isLoading && tests.length === 0 && !error" class="no-tests">
+      <div class="no-tests-icon">
+        <i class="fas fa-clipboard-list"></i>
+      </div>
+      <h3>No tests available</h3>
+      <p>Create a test first before managing questions.</p>
+      <button class="btn btn-primary" routerLink="/tests">
         <i class="fas fa-plus"></i>
-        Créer une Question
-      </button>
-    </div>
-  </div>
-
-  <!-- Message d'erreur global -->
-  <div *ngIf="error" class="alert alert-danger">
-    <i class="fas fa-exclamation-triangle"></i>
-    {{ error }}
-  </div>
-
-  <!-- Indicateur de chargement -->
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Chargement...</p>
-  </div>
-
-  <!-- Formulaire de création de question -->
-  <div *ngIf="showCreateForm" class="create-question-form">
-    <div class="form-header">
-      <h3>Créer une Nouvelle Question</h3>
-      <button class="btn-close" (click)="cancelCreateForm()">
-        <i class="fas fa-times"></i>
+        Create Your First Test
       </button>
     </div>
 
-    <form [formGroup]="createQuestionForm" (ngSubmit)="submitCreateQuestion()">
-      <!-- Question Content -->
-      <div class="form-group">
-        <label for="content">Question *</label>
-        <textarea
-          id="content"
-          formControlName="content"
-          class="form-control"
-          placeholder="Saisissez votre question..."
-          rows="3"
-          maxlength="500"
-        ></textarea>
-        <div
-          *ngIf="
-            createQuestionForm.get('content')?.invalid &&
-            createQuestionForm.get('content')?.touched
-          "
-          class="error-feedback"
+    <!-- Grille des tests -->
+    <div *ngIf="!isLoading && tests.length > 0" class="tests-grid">
+      <div
+        class="test-card"
+        *ngFor="let test of tests; trackBy: trackByTestId"
+        (click)="selectTest(test)"
+      >
+        <div class="test-header">
+          <h3 class="test-title">{{ test.title }}</h3>
+          <div class="test-badges">
+            <span
+              class="status-badge"
+              [ngClass]="{
+                active: test.isActive,
+                inactive: !test.isActive
+              }"
+            >
+              {{ test.isActive ? "Active" : "Inactive" }}
+            </span>
+          </div>
+        </div>
+
+        <div class="test-info">
+          <div class="info-item">
+            <span class="info-label">Category:</span>
+            <span class="info-value">{{
+              getCategoryLabel(test.category)
+            }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Level:</span>
+            <span class="info-value">{{ getLevelLabel(test.level) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Mode:</span>
+            <span class="info-value">{{
+              test.mode === 0 ? "Training" : "Recruitment"
+            }}</span>
+          </div>
+        </div>
+
+        <div class="test-actions">
+          <i class="fas fa-arrow-right"></i>
+          <span>Manage Questions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mode Gestion des Questions -->
+  <div *ngIf="mode === 'manage'" class="questions-management-mode">
+    <!-- En-tête -->
+    <div class="header">
+      <div class="header-left">
+        <button class="btn btn-outline-secondary" routerLink="/questions">
+          <i class="fas fa-arrow-left"></i> Back to Tests
+        </button>
+        <h2>Questions du Test: {{ test.title || "Loading..." }}</h2>
+      </div>
+      <div class="header-actions">
+        <button
+          class="btn btn-secondary"
+          (click)="showAssignQuestionForm()"
+          [disabled]="isLoading"
+          *ngIf="!showCreateForm && !showAssignForm"
         >
-          <span *ngIf="createQuestionForm.get('content')?.errors?.['required']">
-            La question est requise
-          </span>
-          <span
-            *ngIf="createQuestionForm.get('content')?.errors?.['minlength']"
-          >
-            La question doit contenir au moins 10 caractères
-          </span>
-        </div>
+          <i class="fas fa-link"></i>
+          Assigner une Question
+        </button>
+        <button
+          class="btn btn-primary"
+          (click)="showCreateQuestionForm()"
+          [disabled]="isLoading"
+          *ngIf="!showCreateForm && !showAssignForm"
+        >
+          <i class="fas fa-plus"></i>
+          Créer une Question
+        </button>
+      </div>
+    </div>
+
+    <!-- Message d'erreur global -->
+    <div *ngIf="error" class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+    </div>
+
+    <!-- Indicateur de chargement -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement...</p>
+    </div>
+
+    <!-- Formulaire de création de question -->
+    <div *ngIf="showCreateForm" class="create-question-form">
+      <div class="form-header">
+        <h3>Créer une Nouvelle Question</h3>
+        <button class="btn-close" (click)="cancelCreateForm()">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
-      <!-- Question Type -->
-      <div class="form-group">
-        <label for="type">Type de Question *</label>
-        <select id="type" formControlName="type" class="form-control">
-          <option *ngFor="let type of questionTypes" [value]="type.value">
-            {{ type.label }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Answer Details -->
-      <div class="form-group">
-        <label for="answerDetails">Explication (optionnel)</label>
-        <textarea
-          id="answerDetails"
-          formControlName="answerDetails"
-          class="form-control"
-          placeholder="Explication de la réponse..."
-          rows="2"
-        ></textarea>
-      </div>
-
-      <!-- Choices -->
-      <div class="form-group">
-        <div class="choices-header">
-          <label>Choix de Réponses *</label>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            (click)="addChoice()"
-          >
-            <i class="fas fa-plus"></i>
-            Ajouter un Choix
-          </button>
-        </div>
-
-        <div class="choices-list" formArrayName="choices">
+      <form
+        [formGroup]="createQuestionForm"
+        (ngSubmit)="submitCreateQuestion()"
+      >
+        <!-- Question Content -->
+        <div class="form-group">
+          <label for="content">Question *</label>
+          <textarea
+            id="content"
+            formControlName="content"
+            class="form-control"
+            placeholder="Saisissez votre question..."
+            rows="3"
+            maxlength="500"
+          ></textarea>
           <div
-            *ngFor="let choice of choicesArray.controls; let i = index"
-            class="choice-item"
-            [formGroupName]="i"
+            *ngIf="
+              createQuestionForm.get('content')?.invalid &&
+              createQuestionForm.get('content')?.touched
+            "
+            class="error-feedback"
           >
-            <!-- Correct Answer Checkbox -->
-            <div class="choice-correct">
-              <input
-                type="checkbox"
-                formControlName="isCorrect"
-                [id]="'correct-' + i"
-              />
-              <label [for]="'correct-' + i" class="checkbox-label">
-                <i class="fas fa-check"></i>
-              </label>
-            </div>
+            <span
+              *ngIf="createQuestionForm.get('content')?.errors?.['required']"
+            >
+              La question est requise
+            </span>
+            <span
+              *ngIf="createQuestionForm.get('content')?.errors?.['minlength']"
+            >
+              La question doit contenir au moins 10 caractères
+            </span>
+          </div>
+        </div>
 
-            <!-- Choice Content -->
-            <div class="choice-content">
-              <input
-                type="text"
-                formControlName="content"
-                class="form-control"
-                [placeholder]="'Choix ' + (i + 1)"
-                maxlength="200"
-              />
-              <div
-                *ngIf="
-                  choice.get('content')?.invalid &&
-                  choice.get('content')?.touched
-                "
-                class="error-feedback"
-              >
-                Le contenu du choix est requis
-              </div>
-            </div>
+        <!-- Question Type -->
+        <div class="form-group">
+          <label for="type">Type de Question *</label>
+          <select id="type" formControlName="type" class="form-control">
+            <option *ngFor="let type of questionTypes" [value]="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+        </div>
 
-            <!-- Remove Choice Button -->
+        <!-- Answer Details -->
+        <div class="form-group">
+          <label for="answerDetails">Explication (optionnel)</label>
+          <textarea
+            id="answerDetails"
+            formControlName="answerDetails"
+            class="form-control"
+            placeholder="Explication de la réponse..."
+            rows="2"
+          ></textarea>
+        </div>
+
+        <!-- Choices -->
+        <div class="form-group">
+          <div class="choices-header">
+            <label>Choix de Réponses *</label>
             <button
               type="button"
-              class="btn btn-sm btn-outline-danger"
-              (click)="removeChoice(i)"
-              [disabled]="choicesArray.length <= 2"
+              class="btn btn-sm btn-outline-primary"
+              (click)="addChoice()"
             >
-              <i class="fas fa-trash"></i>
+              <i class="fas fa-plus"></i>
+              Ajouter un Choix
             </button>
           </div>
-        </div>
 
-        <div class="choices-help">
-          <small class="text-muted">
-            <i class="fas fa-info-circle"></i>
-            Cochez les cases pour indiquer les bonnes réponses.
-            {{
-              createQuestionForm.get("type")?.value === 0
-                ? "Une seule réponse correcte pour un choix unique."
-                : "Plusieurs réponses possibles pour un choix multiple."
-            }}
-          </small>
-        </div>
-      </div>
-
-      <!-- Form Actions -->
-      <div class="form-actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="cancelCreateForm()"
-          [disabled]="isLoading"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          [disabled]="isLoading || createQuestionForm.invalid"
-        >
-          <span *ngIf="isLoading" class="spinner-sm"></span>
-          Créer la Question
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Formulaire d'assignation de question -->
-  <div *ngIf="showAssignForm" class="assign-question-form">
-    <div class="form-header">
-      <h3>Assigner une Question Existante</h3>
-      <button class="btn-close" (click)="cancelAssignForm()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <form [formGroup]="assignQuestionForm" (ngSubmit)="submitAssignQuestion()">
-      <div class="form-group">
-        <label for="selectedQuestionId">Sélectionner une Question</label>
-        <select
-          id="selectedQuestionId"
-          formControlName="selectedQuestionId"
-          class="form-control"
-        >
-          <option value="">-- Choisir une question --</option>
-          <option
-            *ngFor="let question of availableQuestions"
-            [value]="question.id"
-          >
-            {{ question.content | slice : 0 : 100
-            }}{{ question.content.length > 100 ? "..." : "" }}
-          </option>
-        </select>
-        <div
-          *ngIf="
-            assignQuestionForm.get('selectedQuestionId')?.invalid &&
-            assignQuestionForm.get('selectedQuestionId')?.touched
-          "
-          class="error-feedback"
-        >
-          Veuillez sélectionner une question
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="cancelAssignForm()"
-          [disabled]="isLoading"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          [disabled]="isLoading || assignQuestionForm.invalid"
-        >
-          <span *ngIf="isLoading" class="spinner-sm"></span>
-          Assigner la Question
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Liste des questions existantes -->
-  <div *ngIf="!showCreateForm && !showAssignForm" class="questions-list">
-    <div *ngIf="!isLoading && questions.length === 0" class="no-questions">
-      <div class="no-questions-icon">
-        <i class="fas fa-question-circle"></i>
-      </div>
-      <h3>Aucune Question</h3>
-      <p>Ce test n'a pas encore de questions. Commencez par en créer une.</p>
-      <button class="btn btn-primary" (click)="showCreateQuestionForm()">
-        <i class="fas fa-plus"></i>
-        Créer votre Première Question
-      </button>
-    </div>
-
-    <div *ngIf="questions.length > 0" class="questions-container">
-      <div class="questions-header">
-        <h3>Questions ({{ questions.length }})</h3>
-      </div>
-
-      <div
-        class="question-card"
-        *ngFor="let question of questions; let i = index"
-      >
-        <div class="question-header">
-          <div class="question-number">Q{{ i + 1 }}</div>
-          <div class="question-type">
-            {{ getQuestionTypeLabel(question.type) }}
-          </div>
-          <div class="question-actions">
-            <button
-              class="btn btn-sm btn-outline-danger"
-              (click)="deleteQuestion(question)"
-              [disabled]="isLoading"
-              title="Supprimer"
-            >
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="question-content">
-          <p>{{ question.content }}</p>
-        </div>
-
-        <div
-          *ngIf="question.choices && question.choices.length > 0"
-          class="question-choices"
-        >
-          <div class="choices-title">Choix de réponses:</div>
-          <div class="choices-grid">
+          <div class="choices-list" formArrayName="choices">
             <div
-              *ngFor="let choice of question.choices"
+              *ngFor="let choice of choicesArray.controls; let i = index"
               class="choice-item"
-              [class.correct-choice]="
-                getCorrectAnswers(question).includes(choice.content)
-              "
+              [formGroupName]="i"
             >
-              <div class="choice-indicator">
-                <i
-                  class="fas"
-                  [class.fa-check-circle]="
-                    getCorrectAnswers(question).includes(choice.content)
-                  "
-                  [class.fa-circle]="
-                    !getCorrectAnswers(question).includes(choice.content)
-                  "
-                ></i>
+              <!-- Correct Answer Checkbox -->
+              <div class="choice-correct">
+                <input
+                  type="checkbox"
+                  formControlName="isCorrect"
+                  [id]="'correct-' + i"
+                />
+                <label [for]="'correct-' + i" class="checkbox-label">
+                  <i class="fas fa-check"></i>
+                </label>
               </div>
-              <div class="choice-text">{{ choice.content }}</div>
+
+              <!-- Choice Content -->
+              <div class="choice-content">
+                <input
+                  type="text"
+                  formControlName="content"
+                  class="form-control"
+                  [placeholder]="'Choix ' + (i + 1)"
+                  maxlength="200"
+                />
+                <div
+                  *ngIf="
+                    choice.get('content')?.invalid &&
+                    choice.get('content')?.touched
+                  "
+                  class="error-feedback"
+                >
+                  Le contenu du choix est requis
+                </div>
+              </div>
+
+              <!-- Remove Choice Button -->
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                (click)="removeChoice(i)"
+                [disabled]="choicesArray.length <= 2"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
           </div>
+
+          <div class="choices-help">
+            <small class="text-muted">
+              <i class="fas fa-info-circle"></i>
+              Cochez les cases pour indiquer les bonnes réponses.
+              {{
+                createQuestionForm.get("type")?.value === 0
+                  ? "Une seule réponse correcte pour un choix unique."
+                  : "Plusieurs réponses possibles pour un choix multiple."
+              }}
+            </small>
+          </div>
         </div>
 
-        <div *ngIf="question.answerDetails" class="question-explanation">
-          <div class="explanation-title">
-            <i class="fas fa-lightbulb"></i>
-            Explication:
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cancelCreateForm()"
+            [disabled]="isLoading"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading || createQuestionForm.invalid"
+          >
+            <span *ngIf="isLoading" class="spinner-sm"></span>
+            Créer la Question
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Formulaire d'assignation de question -->
+    <div *ngIf="showAssignForm" class="assign-question-form">
+      <div class="form-header">
+        <h3>Assigner une Question Existante</h3>
+        <button class="btn-close" (click)="cancelAssignForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form
+        [formGroup]="assignQuestionForm"
+        (ngSubmit)="submitAssignQuestion()"
+      >
+        <div class="form-group">
+          <label for="selectedQuestionId">Sélectionner une Question</label>
+          <select
+            id="selectedQuestionId"
+            formControlName="selectedQuestionId"
+            class="form-control"
+          >
+            <option value="">-- Choisir une question --</option>
+            <option
+              *ngFor="let question of availableQuestions"
+              [value]="question.id"
+            >
+              {{ question.content | slice : 0 : 100
+              }}{{ question.content.length > 100 ? "..." : "" }}
+            </option>
+          </select>
+          <div
+            *ngIf="
+              assignQuestionForm.get('selectedQuestionId')?.invalid &&
+              assignQuestionForm.get('selectedQuestionId')?.touched
+            "
+            class="error-feedback"
+          >
+            Veuillez sélectionner une question
           </div>
-          <p>{{ question.answerDetails }}</p>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cancelAssignForm()"
+            [disabled]="isLoading"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading || assignQuestionForm.invalid"
+          >
+            <span *ngIf="isLoading" class="spinner-sm"></span>
+            Assigner la Question
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Liste des questions existantes -->
+    <div *ngIf="!showCreateForm && !showAssignForm" class="questions-list">
+      <div *ngIf="!isLoading && questions.length === 0" class="no-questions">
+        <div class="no-questions-icon">
+          <i class="fas fa-question-circle"></i>
+        </div>
+        <h3>Aucune Question</h3>
+        <p>Ce test n'a pas encore de questions. Commencez par en créer une.</p>
+        <button class="btn btn-primary" (click)="showCreateQuestionForm()">
+          <i class="fas fa-plus"></i>
+          Créer votre Première Question
+        </button>
+      </div>
+
+      <div *ngIf="questions.length > 0" class="questions-container">
+        <div class="questions-header">
+          <h3>Questions ({{ questions.length }})</h3>
+        </div>
+
+        <div
+          class="question-card"
+          *ngFor="let question of questions; let i = index"
+        >
+          <div class="question-header">
+            <div class="question-number">Q{{ i + 1 }}</div>
+            <div class="question-type">
+              {{ getQuestionTypeLabel(question.type) }}
+            </div>
+            <div class="question-actions">
+              <button
+                class="btn btn-sm btn-outline-danger"
+                (click)="deleteQuestion(question)"
+                [disabled]="isLoading"
+                title="Supprimer"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="question-content">
+            <p>{{ question.content }}</p>
+          </div>
+
+          <div
+            *ngIf="question.choices && question.choices.length > 0"
+            class="question-choices"
+          >
+            <div class="choices-title">Choix de réponses:</div>
+            <div class="choices-grid">
+              <div
+                *ngFor="let choice of question.choices"
+                class="choice-item"
+                [class.correct-choice]="
+                  getCorrectAnswers(question).includes(choice.content)
+                "
+              >
+                <div class="choice-indicator">
+                  <i
+                    class="fas"
+                    [class.fa-check-circle]="
+                      getCorrectAnswers(question).includes(choice.content)
+                    "
+                    [class.fa-circle]="
+                      !getCorrectAnswers(question).includes(choice.content)
+                    "
+                  ></i>
+                </div>
+                <div class="choice-text">{{ choice.content }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="question.answerDetails" class="question-explanation">
+            <div class="explanation-title">
+              <i class="fas fa-lightbulb"></i>
+              Explication:
+            </div>
+            <p>{{ question.answerDetails }}</p>
+          </div>
         </div>
       </div>
     </div>

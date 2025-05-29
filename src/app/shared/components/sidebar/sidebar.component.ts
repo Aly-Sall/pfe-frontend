@@ -20,6 +20,11 @@ export class SidebarComponent {
       route: '/tests',
     },
     {
+      title: 'Questions',
+      icon: 'quiz',
+      route: '/questions',
+    },
+    {
       title: 'Candidates',
       icon: 'people',
       route: '/candidates',

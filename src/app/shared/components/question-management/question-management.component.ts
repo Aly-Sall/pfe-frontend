@@ -13,8 +13,8 @@ import {
   QuestionChoice,
   ApiResponse,
 } from '../../../core/services/question.service';
-import { TestDto } from '../../../core/services/test.service';
-import { ActivatedRoute } from '@angular/router';
+import { TestDto, TestService } from '../../../core/services/test.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-question-management',
@@ -24,12 +24,19 @@ import { ActivatedRoute } from '@angular/router';
 export class QuestionManagementComponent implements OnInit, OnChanges {
   @Input() test!: TestDto;
 
+  // Mode de fonctionnement : 'list' pour afficher les tests, 'manage' pour gérer les questions
+  mode: 'list' | 'manage' = 'list';
+
+  // Pour le mode 'list'
+  tests: TestDto[] = [];
+
+  // Pour le mode 'manage'
   questions: QuestionDto[] = [];
   isLoading: boolean = false;
   error: string | null = null;
 
   showCreateForm: boolean = false;
-  showAssignForm: boolean = false; // DÉSACTIVÉ temporairement
+  showAssignForm: boolean = false;
 
   createQuestionForm: FormGroup;
   assignQuestionForm: FormGroup;
@@ -40,7 +47,9 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private questionService: QuestionService,
+    private testService: TestService,
     private fb: FormBuilder
   ) {
     this.createQuestionForm = this.createForm();
@@ -50,22 +59,67 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     const testId = +this.route.snapshot.paramMap.get('testId')!;
     if (testId) {
-      this.test = {
-        id: testId,
-        title: 'Test #' + testId,
-        category: 0,
-        mode: 0,
-        tryAgain: false,
-        showTimer: false,
-        level: 1,
-      };
-      this.loadQuestions();
+      // Mode gestion des questions pour un test spécifique
+      this.mode = 'manage';
+      this.loadTestDetails(testId);
+    } else {
+      // Mode liste des tests
+      this.mode = 'list';
+      this.loadTests();
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['test'] && changes['test'].currentValue?.id) {
       this.loadQuestions();
+    }
+  }
+
+  loadTests(): void {
+    this.isLoading = true;
+    this.error = null;
+
+    this.testService.getAllTests().subscribe({
+      next: (tests) => {
+        this.tests = tests;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading tests:', error);
+        this.error = 'Erreur lors du chargement des tests';
+        this.isLoading = false;
+      },
+    });
+  }
+
+  loadTestDetails(testId: number): void {
+    this.isLoading = true;
+    this.error = null;
+
+    this.testService.getTestById(testId).subscribe({
+      next: (test) => {
+        this.test = test;
+        this.loadQuestions();
+      },
+      error: (error) => {
+        console.error('Error loading test:', error);
+        this.test = {
+          id: testId,
+          title: 'Test #' + testId,
+          category: 0,
+          mode: 0,
+          tryAgain: false,
+          showTimer: false,
+          level: 1,
+        };
+        this.loadQuestions();
+      },
+    });
+  }
+
+  selectTest(test: TestDto): void {
+    if (test.id) {
+      this.router.navigate(['/question-management', test.id]);
     }
   }
 
@@ -98,7 +152,6 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
       next: (questions) => {
         this.questions = questions;
         this.isLoading = false;
-        console.log('Questions loaded successfully:', questions);
       },
       error: (error) => {
         console.error('Error loading questions:', error);
@@ -108,21 +161,17 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
     });
   }
 
-  // TEMPORAIREMENT DÉSACTIVÉ car l'endpoint n'existe pas
   loadAvailableQuestions(): void {
-    console.warn(
-      'loadAvailableQuestions: Cette fonctionnalité est temporairement désactivée'
-    );
-    // this.questionService.getAllQuestions().subscribe({
-    //   next: (questions) => {
-    //     this.availableQuestions = questions.filter(
-    //       (q) => !this.questions.some((existing) => existing.id === q.id)
-    //     );
-    //   },
-    //   error: (error) => {
-    //     console.error('Error loading available questions:', error);
-    //   },
-    // });
+    this.questionService.getAllQuestions().subscribe({
+      next: (questions) => {
+        this.availableQuestions = questions.filter(
+          (q) => !this.questions.some((existing) => existing.id === q.id)
+        );
+      },
+      error: (error) => {
+        console.error('Error loading available questions:', error);
+      },
+    });
   }
 
   showCreateQuestionForm(): void {
@@ -133,15 +182,10 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
     this.addChoice();
   }
 
-  // TEMPORAIREMENT DÉSACTIVÉ
   showAssignQuestionForm(): void {
-    console.warn(
-      'showAssignQuestionForm: Cette fonctionnalité est temporairement désactivée'
-    );
-    this.error = "La fonctionnalité d'assignation n'est pas encore disponible";
-    // this.showAssignForm = true;
-    // this.showCreateForm = false;
-    // this.loadAvailableQuestions();
+    this.showAssignForm = true;
+    this.showCreateForm = false;
+    this.loadAvailableQuestions();
   }
 
   resetCreateForm(): void {
@@ -172,7 +216,6 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
   submitCreateQuestion(): void {
     if (this.createQuestionForm.valid && this.test?.id) {
       this.isLoading = true;
-      this.error = null;
 
       const formValue = this.createQuestionForm.value;
 
@@ -187,7 +230,6 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
         .filter((choice: any) => choice.isCorrect)
         .map((choice: any) => choice.id);
 
-      // Validation des réponses correctes
       if (correctAnswerIds.length === 0) {
         this.error = 'Vous devez sélectionner au moins une réponse correcte';
         this.isLoading = false;
@@ -211,68 +253,58 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
           this.questionService.prepareCorrectAnswerIds(correctAnswerIds),
       };
 
-      console.log('Creating question with request:', createRequest);
-
       this.questionService.createQuestion(createRequest).subscribe({
         next: (response: ApiResponse) => {
-          console.log('Question creation response:', response);
-
           if (response.isSuccess) {
             this.showCreateForm = false;
-            this.loadQuestions(); // Recharger la liste des questions
+            this.loadQuestions();
             this.error = null;
-            console.log('Question created successfully with ID:', response.id);
           } else {
             this.error =
               response.error || 'Erreur lors de la création de la question';
-            console.error('Question creation failed:', response.error);
           }
 
           this.isLoading = false;
         },
         error: (error) => {
           console.error('Error creating question:', error);
-          this.error =
-            'Erreur lors de la création de la question: ' +
-            (error.message || 'Erreur inconnue');
+          this.error = 'Erreur lors de la création de la question';
           this.isLoading = false;
         },
       });
     } else {
-      console.log('Form is invalid');
       this.markFormGroupTouched(this.createQuestionForm);
     }
   }
 
-  // TEMPORAIREMENT DÉSACTIVÉ
   submitAssignQuestion(): void {
-    console.warn(
-      'submitAssignQuestion: Cette fonctionnalité est temporairement désactivée'
-    );
-    this.error = "La fonctionnalité d'assignation n'est pas encore disponible";
+    if (this.assignQuestionForm.valid && this.test?.id) {
+      this.isLoading = true;
 
-    // Code original commenté
-    // if (this.assignQuestionForm.valid && this.test?.id) {
-    //   this.isLoading = true;
-    //   const questionId = this.assignQuestionForm.value.selectedQuestionId;
-    //   this.questionService.assignQuestionToTest(questionId, this.test.id).subscribe({
-    //     next: (response: ApiResponse) => {
-    //       if (response.isSuccess) {
-    //         this.showAssignForm = false;
-    //         this.loadQuestions();
-    //         this.error = null;
-    //       } else {
-    //         this.error = response.error || "Erreur lors de l'assignation de la question";
-    //       }
-    //       this.isLoading = false;
-    //     },
-    //     error: (error) => {
-    //       console.error('Error assigning question:', error);
-    //       this.error = "Erreur lors de l'assignation de la question";
-    //       this.isLoading = false;
-    //     },
-    //   });
-    // }
+      const questionId = this.assignQuestionForm.value.selectedQuestionId;
+
+      this.questionService
+        .assignQuestionToTest(questionId, this.test.id)
+        .subscribe({
+          next: (response: ApiResponse) => {
+            if (response.isSuccess) {
+              this.showAssignForm = false;
+              this.loadQuestions();
+              this.error = null;
+            } else {
+              this.error =
+                response.error || "Erreur lors de l'assignation de la question";
+            }
+
+            this.isLoading = false;
+          },
+          error: (error) => {
+            console.error('Error assigning question:', error);
+            this.error = "Erreur lors de l'assignation de la question";
+            this.isLoading = false;
+          },
+        });
+    }
   }
 
   deleteQuestion(question: QuestionDto): void {
@@ -290,7 +322,6 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
           this.loadQuestions();
           this.error = null;
           this.isLoading = false;
-          console.log('Question deleted successfully');
         },
         error: (error) => {
           console.error('Error deleting question:', error);
@@ -304,13 +335,11 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
   cancelCreateForm(): void {
     this.showCreateForm = false;
     this.resetCreateForm();
-    this.error = null;
   }
 
   cancelAssignForm(): void {
     this.showAssignForm = false;
     this.assignQuestionForm.reset();
-    this.error = null;
   }
 
   getQuestionTypeLabel(type: number): string {
@@ -345,5 +374,36 @@ export class QuestionManagementComponent implements OnInit, OnChanges {
         });
       }
     });
+  }
+
+  // Méthodes utilitaires pour le mode 'list'
+  getCategoryLabel(category: number): string {
+    switch (category) {
+      case 0:
+        return 'None';
+      case 1:
+        return 'General';
+      case 2:
+        return 'Technical';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  getLevelLabel(level: number): string {
+    switch (level) {
+      case 0:
+        return 'Easy';
+      case 1:
+        return 'Medium';
+      case 2:
+        return 'Hard';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  trackByTestId(index: number, test: TestDto): number {
+    return test.id || index;
   }
 }

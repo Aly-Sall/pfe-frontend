@@ -35,7 +35,7 @@ import { DashboardService } from './core/services/dashboard.service';
 import { CandidateEventService } from './core/services/candidate-event.service';
 import { LoadingService } from './core/services/loading.service';
 import { ErrorService } from './core/services/error.service';
-import { QuestionService } from './core/services/question.service';
+import { QuestionService } from './core/services/question.service'; // ✅ Import ajouté
 
 @NgModule({
   declarations: [
@@ -70,7 +70,8 @@ import { QuestionService } from './core/services/question.service';
     DashboardService,
     CandidateEventService,
     LoadingService,
-    ErrorService, // Ajouté ErrorService
+    ErrorService,
+    QuestionService, // ✅ AJOUTÉ !
 
     // HTTP Interceptors
     {
