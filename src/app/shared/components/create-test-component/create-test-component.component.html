@@ -2,10 +2,27 @@
 <div class="create-test-container">
   <h1 class="form-title">{{ isEditMode ? "Edit Test" : "Create New Test" }}</h1>
 
+  <!-- Debug information (à supprimer en production) -->
+  <div
+    *ngIf="!testForm.valid"
+    class="debug-info"
+    style="
+      background: #f0f0f0;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    "
+  >
+    <p>
+      <strong>Form Status:</strong> {{ testForm.valid ? "Valid" : "Invalid" }}
+    </p>
+    <p><strong>Form Value:</strong> {{ testForm.value | json }}</p>
+  </div>
+
   <form [formGroup]="testForm" (ngSubmit)="onSubmit()">
     <!-- Test Name -->
     <div class="form-group">
-      <label for="title">Test Name</label>
+      <label for="title">Test Name *</label>
       <input
         type="text"
         id="title"
@@ -29,7 +46,7 @@
 
     <!-- Category -->
     <div class="form-group">
-      <label for="category">Category</label>
+      <label for="category">Category *</label>
       <div class="select-wrapper">
         <select id="category" formControlName="category" class="form-control">
           <option *ngFor="let category of categories" [value]="category.value">
@@ -43,7 +60,7 @@
     <!-- Mode and Level -->
     <div class="form-row">
       <div class="form-group half-width">
-        <label for="mode">Mode</label>
+        <label for="mode">Mode *</label>
         <div class="select-wrapper">
           <select id="mode" formControlName="mode" class="form-control">
             <option *ngFor="let mode of modes" [value]="mode.value">
@@ -55,7 +72,7 @@
       </div>
 
       <div class="form-group half-width">
-        <label for="level">Difficulty Level</label>
+        <label for="level">Difficulty Level *</label>
         <div class="select-wrapper">
           <select id="level" formControlName="level" class="form-control">
             <option *ngFor="let level of levels" [value]="level.value">
@@ -67,18 +84,19 @@
       </div>
     </div>
 
-    <!-- Try Again -->
+    <!-- Options -->
     <div class="form-group">
+      <label>Test Options</label>
+
+      <!-- Try Again -->
       <div class="checkbox-group">
         <input type="checkbox" id="tryAgain" formControlName="tryAgain" />
         <label for="tryAgain" class="checkbox-label">
           Allow multiple attempts (Try Again)
         </label>
       </div>
-    </div>
 
-    <!-- Show Timer -->
-    <div class="form-group">
+      <!-- Show Timer -->
       <div class="checkbox-group">
         <input type="checkbox" id="showTimer" formControlName="showTimer" />
         <label for="showTimer" class="checkbox-label">
@@ -92,9 +110,44 @@
       <button type="button" class="btn btn-cancel" (click)="onCancel()">
         Cancel
       </button>
-      <button type="submit" class="btn btn-create">
+      <button type="submit" class="btn btn-create" [disabled]="!testForm.valid">
         {{ isEditMode ? "Update Test" : "Create Test" }}
       </button>
+    </div>
+
+    <!-- Form Debug (à supprimer en production) -->
+    <div
+      class="form-debug"
+      style="
+        margin-top: 20px;
+        padding: 10px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        font-size: 12px;
+      "
+    >
+      <strong>Form Debug Info:</strong><br />
+      Valid: {{ testForm.valid }}<br />
+      Touched: {{ testForm.touched }}<br />
+      <details>
+        <summary>Form Controls Status</summary>
+        <div
+          *ngFor="
+            let control of [
+              'title',
+              'category',
+              'mode',
+              'level',
+              'tryAgain',
+              'showTimer'
+            ]
+          "
+        >
+          {{ control }}: Valid: {{ testForm.get(control)?.valid }}, Value:
+          {{ testForm.get(control)?.value }}, Errors:
+          {{ testForm.get(control)?.errors | json }}
+        </div>
+      </details>
     </div>
   </form>
 </div>

@@ -9,6 +9,7 @@ import { CandidateFormComponent } from './shared/components/candidate-form/candi
 import { TestTakingComponent } from './shared/components/test-taking/test-taking.component';
 import { TestResultComponent } from './shared/components/test-result/test-result.component';
 import { LoginComponent } from './shared/components/login/login.component';
+import { QuestionManagementComponent } from './shared/components/question-management/question-management.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -20,6 +21,10 @@ const routes: Routes = [
   { path: 'candidates/:id/edit', component: CandidateFormComponent },
   { path: 'take-test/:id', component: TestTakingComponent },
   { path: 'test-result', component: TestResultComponent },
+  {
+    path: 'question-management/:testId',
+    component: QuestionManagementComponent,
+  },
   { path: '**', redirectTo: '/dashboard' },
 ];
 

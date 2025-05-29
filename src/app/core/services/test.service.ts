@@ -1,8 +1,8 @@
-// src/app/core/services/test.service.ts
+// src/app/core/services/test.service.ts - Méthode createTest corrigée
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface TestResponse {
@@ -75,11 +75,120 @@ export class TestService {
 
   constructor(private http: HttpClient) {}
 
+  // Create a new test - CORRIGÉ avec debugging et validation améliorée
+  createTest(createCommand: CreateTestCommand): Observable<TestResponse> {
+    console.log('=== TestService.createTest called ===');
+    console.log('Input command:', createCommand);
+
+    // Validation stricte des données avant envoi
+    if (!createCommand.title || createCommand.title.trim() === '') {
+      console.error('Title is required');
+      throw new Error('Title is required');
+    }
+
+    // Validation des énums
+    if (![0, 1, 2].includes(createCommand.category)) {
+      console.error('Invalid category:', createCommand.category);
+      throw new Error('Invalid category value');
+    }
+
+    if (![0, 1].includes(createCommand.mode)) {
+      console.error('Invalid mode:', createCommand.mode);
+      throw new Error('Invalid mode value');
+    }
+
+    if (![0, 1, 2].includes(createCommand.level)) {
+      console.error('Invalid level:', createCommand.level);
+      throw new Error('Invalid level value');
+    }
+
+    // Nettoyage et validation des données
+    const validatedCommand: CreateTestCommand = {
+      title: String(createCommand.title).trim(),
+      category: Number(createCommand.category),
+      mode: Number(createCommand.mode),
+      tryAgain: Boolean(createCommand.tryAgain),
+      showTimer: Boolean(createCommand.showTimer),
+      level: Number(createCommand.level),
+    };
+
+    console.log('Validated command:', validatedCommand);
+    console.log('API URL:', this.apiUrl);
+
+    // Headers appropriés
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    });
+
+    return this.http
+      .post<TestResponse>(this.apiUrl, validatedCommand, { headers })
+      .pipe(
+        tap((response) => {
+          console.log('=== Raw API Response ===');
+          console.log('Response:', response);
+          console.log('Is Success:', response.isSuccess);
+          console.log('Response ID:', response.id);
+          console.log('Response Error:', response.error);
+        }),
+        map((response) => {
+          console.log('=== Processing API Response ===');
+
+          if (!response) {
+            console.error('Empty response from API');
+            throw new Error('Empty response from server');
+          }
+
+          if (response.isSuccess) {
+            console.log('✅ Test created successfully with ID:', response.id);
+          } else {
+            console.error('❌ Test creation failed:', response.error);
+          }
+
+          return response;
+        }),
+        catchError((error) => {
+          console.error('=== API Call Error ===');
+          console.error('Error object:', error);
+          console.error('Error status:', error.status);
+          console.error('Error message:', error.message);
+          console.error('Error body:', error.error);
+
+          // Détails d'erreur plus spécifiques
+          let errorMessage = 'Unknown error occurred';
+
+          if (error.status === 0) {
+            errorMessage =
+              'Cannot connect to server. Check if the backend is running and CORS is configured.';
+          } else if (error.status === 400) {
+            errorMessage =
+              error.error?.error ||
+              error.error?.message ||
+              'Bad request - Invalid data sent to server';
+          } else if (error.status === 404) {
+            errorMessage = 'API endpoint not found. Check the API URL.';
+          } else if (error.status === 500) {
+            errorMessage = 'Internal server error. Check server logs.';
+          } else {
+            errorMessage = `HTTP ${error.status}: ${
+              error.message || 'Server error'
+            }`;
+          }
+
+          console.error('Processed error message:', errorMessage);
+          throw new Error(errorMessage);
+        })
+      );
+  }
+
   // Get a single test by ID
   getTestById(id: number): Observable<TestDto> {
+    console.log('Getting test by ID:', id);
+
     return this.http
       .get<TestResponse>(`${this.apiUrl}/by-id/${id}?Id=${id}`)
       .pipe(
+        tap((response) => console.log('GetTestById response:', response)),
         map((response) => {
           if (!response.isSuccess) {
             throw new Error(response.error || 'Failed to load test');
@@ -93,9 +202,12 @@ export class TestService {
       );
   }
 
-  // Get all tests (à implémenter côté backend)
+  // Get all tests
   getAllTests(): Observable<TestDto[]> {
+    console.log('Getting all tests from:', this.apiUrl);
+
     return this.http.get<TestDto[]>(this.apiUrl).pipe(
+      tap((response) => console.log('GetAllTests response:', response)),
       catchError((error) => {
         console.error('Error loading all tests:', error);
         // Retourner des données mock en cas d'erreur
@@ -106,11 +218,14 @@ export class TestService {
 
   // Get questions for a specific test
   getTestQuestions(testId: number): Observable<QuestionDto[]> {
+    console.log('Getting questions for test ID:', testId);
+
     return this.http
       .get<QuestionDto[]>(
         `${this.questionsUrl}/GetQuestionsByTestId?Id=${testId}`
       )
       .pipe(
+        tap((response) => console.log('GetTestQuestions response:', response)),
         catchError((error) => {
           console.error('Error loading questions:', error);
           throw error;
@@ -118,35 +233,7 @@ export class TestService {
       );
   }
 
-  // Create a new test - utilise exactement l'interface CreateTestCommand du backend
-  createTest(createCommand: CreateTestCommand): Observable<TestResponse> {
-    console.log('Sending create test command to backend:', createCommand);
-
-    // Validation des données avant envoi
-    const validatedCommand: CreateTestCommand = {
-      title: createCommand.title,
-      category: Number(createCommand.category), // S'assurer que c'est un nombre
-      mode: Number(createCommand.mode), // S'assurer que c'est un nombre
-      tryAgain: Boolean(createCommand.tryAgain),
-      showTimer: Boolean(createCommand.showTimer),
-      level: Number(createCommand.level), // S'assurer que c'est un nombre
-    };
-
-    console.log('Validated command:', validatedCommand);
-
-    return this.http.post<TestResponse>(this.apiUrl, validatedCommand).pipe(
-      map((response) => {
-        console.log('Create test response from backend:', response);
-        return response;
-      }),
-      catchError((error) => {
-        console.error('Error creating test:', error);
-        throw error;
-      })
-    );
-  }
-
-  // Update an existing test - utilise l'interface UpdateTestCommand du backend
+  // Update an existing test
   updateTest(test: TestDto): Observable<any> {
     const updateCommand: UpdateTestCommand = {
       id: test.id!,
@@ -156,13 +243,10 @@ export class TestService {
       showTimer: test.showTimer,
     };
 
-    console.log('Sending update test command to backend:', updateCommand);
+    console.log('Updating test with command:', updateCommand);
 
     return this.http.put(`${this.apiUrl}/${test.id}`, updateCommand).pipe(
-      map((response) => {
-        console.log('Update test response from backend:', response);
-        return response;
-      }),
+      tap((response) => console.log('UpdateTest response:', response)),
       catchError((error) => {
         console.error('Error updating test:', error);
         throw error;
@@ -170,9 +254,12 @@ export class TestService {
     );
   }
 
-  // Delete a test (à implémenter côté backend)
+  // Delete a test
   deleteTest(id: number): Observable<any> {
+    console.log('Deleting test with ID:', id);
+
     return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+      tap((response) => console.log('DeleteTest response:', response)),
       catchError((error) => {
         console.error('Error deleting test:', error);
         throw error;
@@ -213,18 +300,9 @@ export class TestService {
         tryAgain: true,
         level: 0, // Easy
       },
-      {
-        id: 3,
-        title: 'Advanced Programming Test',
-        category: 2, // Technical
-        mode: 1, // Recruitment
-        isActive: false,
-        showTimer: true,
-        tryAgain: false,
-        level: 2, // Hard
-      },
     ];
 
+    console.log('Returning mock tests:', mockTests);
     return new Observable((observer) => {
       observer.next(mockTests);
       observer.complete();
@@ -245,62 +323,5 @@ export class TestService {
   static getLevelLabel(level: number): string {
     const labels = { 0: 'Easy', 1: 'Medium', 2: 'Hard' };
     return labels[level as keyof typeof labels] || 'Unknown';
-  }
-
-  // Méthode pour valider les données avant envoi au backend
-  validateTestData(data: any): CreateTestCommand {
-    return {
-      title: String(data.title || '').trim(),
-      category: Number(data.category) || 0,
-      mode: Number(data.mode) || 0,
-      tryAgain: Boolean(data.tryAgain),
-      showTimer: Boolean(data.showTimer),
-      level: Number(data.level) || 0,
-    };
-  }
-
-  // Méthode pour convertir les strings en nombres pour les enums
-  normalizeEnumValues(data: any): any {
-    return {
-      ...data,
-      category:
-        typeof data.category === 'string'
-          ? this.getCategoryValueFromString(data.category)
-          : Number(data.category),
-      mode:
-        typeof data.mode === 'string'
-          ? this.getModeValueFromString(data.mode)
-          : Number(data.mode),
-      level:
-        typeof data.level === 'string'
-          ? this.getLevelValueFromString(data.level)
-          : Number(data.level),
-    };
-  }
-
-  private getCategoryValueFromString(category: string): number {
-    const mapping: { [key: string]: number } = {
-      None: 0,
-      General: 1,
-      Technical: 2,
-    };
-    return mapping[category] ?? 0;
-  }
-
-  private getModeValueFromString(mode: string): number {
-    const mapping: { [key: string]: number } = {
-      Training: 0,
-      Recruitment: 1,
-    };
-    return mapping[mode] ?? 0;
-  }
-
-  private getLevelValueFromString(level: string): number {
-    const mapping: { [key: string]: number } = {
-      Easy: 0,
-      Medium: 1,
-      Hard: 2,
-    };
-    return mapping[level] ?? 0;
   }
 }

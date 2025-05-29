@@ -1,5 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { TestService, TestDto } from '../../../core/services/test.service';
+import {
+  TestService,
+  TestDto,
+  CreateTestCommand,
+} from '../../../core/services/test.service';
 
 @Component({
   selector: 'app-tests',
@@ -105,53 +109,56 @@ export class TestsComponent implements OnInit {
     this.testToEdit = null;
   }
 
-  // Gérer la création d'un test avec l'API
-  handleCreateTest(testData: any): void {
-    console.log('Creating test with data:', testData);
+  // CORRIGÉ: Gérer la création d'un test avec l'API
+  handleCreateTest(createCommand: CreateTestCommand): void {
+    console.log('Creating test with command:', createCommand);
 
     this.isLoading = true;
+    this.error = null;
 
-    // Mapper les données du formulaire vers TestDto
-    const newTest: TestDto = {
-      title: testData.testName,
-      category: this.getCategoryFromType(testData.testType),
-      mode: 0, // Mode Training par défaut
-      tryAgain: testData.settings?.allowMultipleAttempts || false,
-      showTimer: true, // Timer activé par défaut
-      level: 0, // Niveau Easy par défaut
-    };
-
-    this.testService.createTest(newTest).subscribe({
+    // Appeler directement le service avec la commande reçue
+    this.testService.createTest(createCommand).subscribe({
       next: (response) => {
         console.log('Test created successfully:', response);
 
         if (response.isSuccess && response.id) {
-          // Ajouter le nouveau test à la liste locale avec l'ID retourné
+          // Créer un TestDto pour l'affichage local
           const createdTest: TestDto = {
-            ...newTest,
             id: response.id,
+            title: createCommand.title,
+            category: createCommand.category,
+            mode: createCommand.mode,
+            level: createCommand.level,
+            tryAgain: createCommand.tryAgain,
+            showTimer: createCommand.showTimer,
             isActive: true,
           };
 
+          // Ajouter le nouveau test à la liste locale
           this.tests.unshift(createdTest);
           this.showCreateForm = false;
           this.testToEdit = null;
           this.error = null;
+
+          console.log('Test added to local list:', createdTest);
         } else {
           this.error = response.error || 'Erreur lors de la création du test';
+          console.error('Create test failed:', response.error);
         }
 
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error creating test:', error);
-        this.error = 'Erreur lors de la création du test';
+        this.error =
+          'Erreur lors de la création du test: ' +
+          (error.message || 'Erreur inconnue');
         this.isLoading = false;
       },
     });
   }
 
-  // Gérer la mise à jour d'un test avec l'API
+  // CORRIGÉ: Gérer la mise à jour d'un test avec l'API
   handleUpdateTest(updatedTest: TestDto): void {
     console.log('Updating test:', updatedTest);
 
@@ -161,6 +168,7 @@ export class TestsComponent implements OnInit {
     }
 
     this.isLoading = true;
+    this.error = null;
 
     this.testService.updateTest(updatedTest).subscribe({
       next: () => {
@@ -184,7 +192,9 @@ export class TestsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating test:', error);
-        this.error = 'Erreur lors de la mise à jour du test';
+        this.error =
+          'Erreur lors de la mise à jour du test: ' +
+          (error.message || 'Erreur inconnue');
         this.isLoading = false;
       },
     });
@@ -225,7 +235,9 @@ export class TestsComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting test:', error);
-          this.error = 'Erreur lors de la suppression du test';
+          this.error =
+            'Erreur lors de la suppression du test: ' +
+            (error.message || 'Erreur inconnue');
           this.isLoading = false;
         },
       });
@@ -237,31 +249,17 @@ export class TestsComponent implements OnInit {
     this.loadTests();
   }
 
-  // Convertir le type de test en catégorie
-  getCategoryFromType(type: string): number {
-    switch (type) {
-      case 'Technical Assessment':
-        return 2; // Technical
-      case 'Coding Challenge':
-        return 2; // Technical
-      case 'Aptitude Test':
-        return 1; // General
-      case 'Behavioral Assessment':
-        return 1; // General
-      default:
-        return 0; // None
-    }
-  }
-
   // Convertir la catégorie en libellé
   getCategoryLabel(category: number): string {
     switch (category) {
+      case 0:
+        return 'None';
       case 1:
         return 'General';
       case 2:
         return 'Technical';
       default:
-        return 'None';
+        return 'Unknown';
     }
   }
 

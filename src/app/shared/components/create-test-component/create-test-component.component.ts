@@ -64,17 +64,12 @@ export class CreateTestComponentComponent implements OnInit, OnChanges {
   ];
 
   constructor(private fb: FormBuilder) {
-    // FormGroup avec tous les champs de l'interface utilisateur
+    // CORRIGÉ: FormGroup simplifié avec seulement les champs nécessaires
     this.testForm = this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(100)]],
-      description: [''], // Champ UI seulement
       category: [1, Validators.required], // Default to General
-      duration: ['', [Validators.required, Validators.min(1)]], // Champ UI seulement
-      totalPoints: ['', [Validators.required, Validators.min(1)]], // Champ UI seulement
       mode: [0, Validators.required], // Default to Training
       level: [0, Validators.required], // Default to Easy
-      startDate: [''], // Champ UI seulement
-      dueDate: [''], // Champ UI seulement
       tryAgain: [false], // Envoyé au backend
       showTimer: [true], // Envoyé au backend
     });
@@ -101,47 +96,50 @@ export class CreateTestComponentComponent implements OnInit, OnChanges {
         level: this.test.level,
         tryAgain: this.test.tryAgain,
         showTimer: this.test.showTimer,
-        // Les autres champs restent vides car ils ne viennent pas du backend
-        description: '',
-        duration: '',
-        totalPoints: '',
-        startDate: '',
-        dueDate: '',
       });
     }
   }
 
   onSubmit(): void {
+    console.log('Form submitted');
+    console.log('Form valid:', this.testForm.valid);
+    console.log('Form value:', this.testForm.value);
+
     if (this.testForm.valid) {
       const formValue = this.testForm.value;
 
       if (this.isEditMode && this.test) {
-        // Mode mise à jour - Envoyer seulement les champs supportés par le backend
+        // Mode mise à jour
         const updatedTest: TestDto = {
           ...this.test,
           title: formValue.title,
-          category: formValue.category,
-          mode: formValue.mode,
-          level: formValue.level,
-          tryAgain: formValue.tryAgain,
-          showTimer: formValue.showTimer,
-        };
-        this.update.emit(updatedTest);
-      } else {
-        // Mode création - Envoyer seulement les champs attendus par le backend
-        const createCommand: CreateTestCommand = {
-          title: formValue.title,
-          category: formValue.category,
-          mode: formValue.mode,
-          level: formValue.level,
-          tryAgain: formValue.tryAgain,
-          showTimer: formValue.showTimer,
+          category: Number(formValue.category), // S'assurer que c'est un nombre
+          mode: Number(formValue.mode),
+          level: Number(formValue.level),
+          tryAgain: Boolean(formValue.tryAgain),
+          showTimer: Boolean(formValue.showTimer),
         };
 
-        console.log('Sending to backend:', createCommand);
+        console.log('Emitting update event with:', updatedTest);
+        this.update.emit(updatedTest);
+      } else {
+        // Mode création - CORRIGÉ: Validation et conversion des types
+        const createCommand: CreateTestCommand = {
+          title: String(formValue.title).trim(),
+          category: Number(formValue.category),
+          mode: Number(formValue.mode),
+          level: Number(formValue.level),
+          tryAgain: Boolean(formValue.tryAgain),
+          showTimer: Boolean(formValue.showTimer),
+        };
+
+        console.log('Emitting create event with:', createCommand);
         this.create.emit(createCommand);
       }
     } else {
+      console.log('Form is invalid');
+      console.log('Form errors:', this.getFormErrors());
+
       // Marquer tous les champs comme touchés pour afficher les erreurs
       Object.keys(this.testForm.controls).forEach((key) => {
         const control = this.testForm.get(key);
@@ -151,7 +149,20 @@ export class CreateTestComponentComponent implements OnInit, OnChanges {
   }
 
   onCancel(): void {
+    console.log('Form cancelled');
     this.cancel.emit();
+  }
+
+  // AJOUTÉ: Méthode pour déboguer les erreurs du formulaire
+  private getFormErrors(): any {
+    const errors: any = {};
+    Object.keys(this.testForm.controls).forEach((key) => {
+      const control = this.testForm.get(key);
+      if (control && control.errors) {
+        errors[key] = control.errors;
+      }
+    });
+    return errors;
   }
 
   // Helper pour obtenir le libellé d'une catégorie
