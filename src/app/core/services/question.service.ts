@@ -1,7 +1,7 @@
-// src/app/core/services/question.service.ts
+// src/app/core/services/question.service.ts - VERSION CORRIGÉE
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
@@ -58,18 +58,18 @@ export class QuestionService {
       );
   }
 
-  // Créer une nouvelle question
+  // Créer une nouvelle question - CORRIGÉ
   createQuestion(question: CreateQuestionRequest): Observable<ApiResponse> {
     console.log('Creating question:', question);
 
-    // Préparer les données pour l'API backend
+    // Préparer les données exactement comme attendu par le backend
     const requestData = {
       content: question.content,
       type: question.type,
       answerDetails: question.answerDetails || '',
       quizTestId: question.quizTestId,
       listOfCorrectAnswerIds: question.listOfCorrectAnswerIds,
-      choices: question.choices, // 👈 AJOUT ESSENTIEL
+      choices: question.choices,
     };
 
     console.log('Sending to backend:', requestData);
@@ -96,33 +96,29 @@ export class QuestionService {
     );
   }
 
-  // Assigner une question existante à un test
+  // TEMPORAIREMENT DÉSACTIVÉ - Ces endpoints n'existent pas côté backend
+  // Récupérer toutes les questions - MOCK DATA pour l'instant
+  getAllQuestions(): Observable<QuestionDto[]> {
+    console.warn(
+      'getAllQuestions: Using mock data - backend endpoint not implemented'
+    );
+    return this.getMockQuestions();
+  }
+
+  // Assigner une question à un test - MOCK pour l'instant
   assignQuestionToTest(
     questionId: number,
     testId: number
   ): Observable<ApiResponse> {
-    // Cette méthode nécessitera un nouveau endpoint côté backend
-    const requestData = { questionId, testId };
-
-    return this.http
-      .post<ApiResponse>(`${this.apiUrl}/assign-to-test`, requestData)
-      .pipe(
-        catchError((error) => {
-          console.error('Error assigning question to test:', error);
-          throw error;
-        })
-      );
-  }
-
-  // Récupérer toutes les questions (non assignées à un test spécifique)
-  getAllQuestions(): Observable<QuestionDto[]> {
-    return this.http.get<QuestionDto[]>(`${this.apiUrl}/all`).pipe(
-      catchError((error) => {
-        console.error('Error loading all questions:', error);
-        // Retourner des données mock en cas d'erreur
-        return this.getMockQuestions();
-      })
+    console.warn(
+      'assignQuestionToTest: Using mock response - backend endpoint not implemented'
     );
+
+    // Retourner une réponse mock pour éviter l'erreur 404
+    return of({
+      isSuccess: false,
+      error: "Cette fonctionnalité n'est pas encore implémentée côté backend",
+    });
   }
 
   // Générer des questions avec OpenAI (si l'endpoint existe)
