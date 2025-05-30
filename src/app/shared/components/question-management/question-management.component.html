@@ -1,3 +1,4 @@
+<!-- src/app/shared/components/question-management/question-management.component.html - CODE COMPLET -->
 <div class="question-management-container">
   <!-- Mode Liste des Tests -->
   <div *ngIf="mode === 'list'" class="tests-list-mode">
@@ -301,7 +302,26 @@
         </button>
       </div>
 
+      <!-- Message si aucune question disponible -->
+      <div
+        *ngIf="!isLoading && availableQuestions.length === 0"
+        class="alert alert-warning"
+      >
+        <i class="fas fa-info-circle"></i>
+        Aucune question disponible pour assignation. Toutes les questions
+        existantes sont déjà assignées à des tests.
+        <br /><br />
+        <button
+          class="btn btn-primary btn-sm"
+          (click)="showCreateQuestionForm()"
+        >
+          <i class="fas fa-plus"></i>
+          Créer une nouvelle question
+        </button>
+      </div>
+
       <form
+        *ngIf="availableQuestions.length > 0"
         [formGroup]="assignQuestionForm"
         (ngSubmit)="submitAssignQuestion()"
       >
@@ -317,6 +337,7 @@
               *ngFor="let question of availableQuestions"
               [value]="question.id"
             >
+              [{{ getQuestionTypeLabel(question.type) }}]
               {{ question.content | slice : 0 : 100
               }}{{ question.content.length > 100 ? "..." : "" }}
             </option>
@@ -329,6 +350,43 @@
             class="error-feedback"
           >
             Veuillez sélectionner une question
+          </div>
+        </div>
+
+        <!-- Aperçu de la question sélectionnée -->
+        <div
+          *ngIf="assignQuestionForm.get('selectedQuestionId')?.value"
+          class="selected-question-preview"
+        >
+          <h4>Aperçu de la question :</h4>
+          <div class="preview-content">
+            <ng-container *ngFor="let question of availableQuestions">
+              <div
+                *ngIf="
+                  question.id ==
+                  assignQuestionForm.get('selectedQuestionId')?.value
+                "
+              >
+                <p>
+                  <strong>{{ question.content }}</strong>
+                </p>
+                <p>
+                  <em>Type: {{ getQuestionTypeLabel(question.type) }}</em>
+                </p>
+                <div *ngIf="question.choices && question.choices.length > 0">
+                  <strong>Choix:</strong>
+                  <ul>
+                    <li *ngFor="let choice of question.choices">
+                      {{ choice.content }}
+                    </li>
+                  </ul>
+                </div>
+                <div *ngIf="question.answerDetails">
+                  <strong>Explication:</strong>
+                  <p>{{ question.answerDetails }}</p>
+                </div>
+              </div>
+            </ng-container>
           </div>
         </div>
 

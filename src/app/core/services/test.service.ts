@@ -1,4 +1,4 @@
-// src/app/core/services/test.service.ts - Méthode createTest corrigée
+// src/app/core/services/test.service.ts - Version complète avec Update et Delete
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -75,7 +75,7 @@ export class TestService {
 
   constructor(private http: HttpClient) {}
 
-  // Create a new test - CORRIGÉ avec debugging et validation améliorée
+  // Create a new test
   createTest(createCommand: CreateTestCommand): Observable<TestResponse> {
     console.log('=== TestService.createTest called ===');
     console.log('Input command:', createCommand);
@@ -181,6 +181,118 @@ export class TestService {
       );
   }
 
+  // ✅ NOUVEAU: Update an existing test
+  updateTest(test: TestDto): Observable<void> {
+    console.log('=== TestService.updateTest called ===');
+    console.log('Input test:', test);
+
+    if (!test.id) {
+      throw new Error('Test ID is required for update');
+    }
+
+    // Préparer la commande selon l'interface backend
+    const updateCommand: UpdateTestCommand = {
+      id: test.id,
+      title: String(test.title).trim(),
+      category: Number(test.category),
+      mode: Number(test.mode),
+      showTimer: Boolean(test.showTimer),
+    };
+
+    console.log('Update command:', updateCommand);
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    });
+
+    return this.http
+      .put<void>(`${this.apiUrl}/${test.id}`, updateCommand, { headers })
+      .pipe(
+        tap(() => {
+          console.log('✅ Test updated successfully');
+        }),
+        catchError((error) => {
+          console.error('=== Update Test Error ===');
+          console.error('Error object:', error);
+          console.error('Error status:', error.status);
+          console.error('Error message:', error.message);
+
+          let errorMessage = 'Unknown error occurred';
+
+          if (error.status === 0) {
+            errorMessage =
+              'Cannot connect to server. Check if the backend is running and CORS is configured.';
+          } else if (error.status === 400) {
+            errorMessage =
+              error.error?.error ||
+              error.error?.message ||
+              'Bad request - Invalid data sent to server';
+          } else if (error.status === 403) {
+            errorMessage = 'Forbidden - Cannot update an active test';
+          } else if (error.status === 404) {
+            errorMessage = 'Test not found';
+          } else if (error.status === 500) {
+            errorMessage = 'Internal server error. Check server logs.';
+          } else {
+            errorMessage = `HTTP ${error.status}: ${
+              error.message || 'Server error'
+            }`;
+          }
+
+          console.error('Processed error message:', errorMessage);
+          throw new Error(errorMessage);
+        })
+      );
+  }
+
+  // ✅ NOUVEAU: Delete a test
+  deleteTest(id: number): Observable<void> {
+    console.log('=== TestService.deleteTest called ===');
+    console.log('Deleting test with ID:', id);
+
+    if (!id || id <= 0) {
+      throw new Error('Valid test ID is required for deletion');
+    }
+
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        console.log('✅ Test deleted successfully');
+      }),
+      catchError((error) => {
+        console.error('=== Delete Test Error ===');
+        console.error('Error object:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
+
+        let errorMessage = 'Unknown error occurred';
+
+        if (error.status === 0) {
+          errorMessage =
+            'Cannot connect to server. Check if the backend is running and CORS is configured.';
+        } else if (error.status === 400) {
+          errorMessage =
+            error.error?.error ||
+            error.error?.message ||
+            'Bad request - Invalid test ID';
+        } else if (error.status === 403) {
+          errorMessage = 'Forbidden - Cannot delete an active test';
+        } else if (error.status === 404) {
+          errorMessage = 'Test not found';
+        } else if (error.status === 500) {
+          errorMessage = 'Internal server error. Check server logs.';
+        } else {
+          errorMessage = `HTTP ${error.status}: ${
+            error.message || 'Server error'
+          }`;
+        }
+
+        console.error('Processed error message:', errorMessage);
+        throw new Error(errorMessage);
+      })
+    );
+  }
+
   // Get a single test by ID
   getTestById(id: number): Observable<TestDto> {
     console.log('Getting test by ID:', id);
@@ -231,40 +343,6 @@ export class TestService {
           throw error;
         })
       );
-  }
-
-  // Update an existing test
-  updateTest(test: TestDto): Observable<any> {
-    const updateCommand: UpdateTestCommand = {
-      id: test.id!,
-      title: test.title,
-      category: test.category,
-      mode: test.mode,
-      showTimer: test.showTimer,
-    };
-
-    console.log('Updating test with command:', updateCommand);
-
-    return this.http.put(`${this.apiUrl}/${test.id}`, updateCommand).pipe(
-      tap((response) => console.log('UpdateTest response:', response)),
-      catchError((error) => {
-        console.error('Error updating test:', error);
-        throw error;
-      })
-    );
-  }
-
-  // Delete a test
-  deleteTest(id: number): Observable<any> {
-    console.log('Deleting test with ID:', id);
-
-    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
-      tap((response) => console.log('DeleteTest response:', response)),
-      catchError((error) => {
-        console.error('Error deleting test:', error);
-        throw error;
-      })
-    );
   }
 
   // Get test by access token

@@ -1,3 +1,4 @@
+// src/app/shared/components/tests/tests.component.ts - Version corrigée avec Update et Delete
 import { Component, OnInit } from '@angular/core';
 import {
   TestService,
@@ -109,7 +110,7 @@ export class TestsComponent implements OnInit {
     this.testToEdit = null;
   }
 
-  // CORRIGÉ: Gérer la création d'un test avec l'API
+  // Gérer la création d'un test avec l'API
   handleCreateTest(createCommand: CreateTestCommand): void {
     console.log('Creating test with command:', createCommand);
 
@@ -158,7 +159,7 @@ export class TestsComponent implements OnInit {
     });
   }
 
-  // CORRIGÉ: Gérer la mise à jour d'un test avec l'API
+  // ✅ CORRIGÉ: Gérer la mise à jour d'un test avec l'API
   handleUpdateTest(updatedTest: TestDto): void {
     console.log('Updating test:', updatedTest);
 
@@ -189,6 +190,9 @@ export class TestsComponent implements OnInit {
         this.testToEdit = null;
         this.error = null;
         this.isLoading = false;
+
+        // Afficher un message de succès
+        console.log('Test mis à jour avec succès');
       },
       error: (error) => {
         console.error('Error updating test:', error);
@@ -205,17 +209,20 @@ export class TestsComponent implements OnInit {
     this.handleUpdateTest(updatedTest);
   }
 
-  // Supprimer un test avec l'API
+  // ✅ CORRIGÉ: Supprimer un test avec l'API
   deleteTest(test: TestDto): void {
     if (!test.id) {
       this.error = 'Impossible de supprimer le test: ID manquant';
       return;
     }
 
-    if (
-      confirm(`Êtes-vous sûr de vouloir supprimer le test "${test.title}" ?`)
-    ) {
+    const confirmMessage = test.isActive
+      ? `Attention: Le test "${test.title}" est actuellement actif. Êtes-vous sûr de vouloir le supprimer ?`
+      : `Êtes-vous sûr de vouloir supprimer le test "${test.title}" ?`;
+
+    if (confirm(confirmMessage)) {
       this.isLoading = true;
+      this.error = null;
 
       this.testService.deleteTest(test.id).subscribe({
         next: () => {
@@ -232,12 +239,75 @@ export class TestsComponent implements OnInit {
 
           this.error = null;
           this.isLoading = false;
+
+          // Afficher un message de succès
+          console.log('Test supprimé avec succès');
         },
         error: (error) => {
           console.error('Error deleting test:', error);
-          this.error =
-            'Erreur lors de la suppression du test: ' +
-            (error.message || 'Erreur inconnue');
+
+          // Gestion des erreurs spécifiques
+          let errorMessage = 'Erreur lors de la suppression du test: ';
+
+          if (error.message.includes('Forbidden')) {
+            errorMessage +=
+              "Impossible de supprimer un test actif. Désactivez-le d'abord.";
+          } else if (error.message.includes('not found')) {
+            errorMessage += "Le test n'existe plus.";
+          } else {
+            errorMessage += error.message || 'Erreur inconnue';
+          }
+
+          this.error = errorMessage;
+          this.isLoading = false;
+        },
+      });
+    }
+  }
+
+  // ✅ NOUVEAU: Activer/Désactiver un test
+  toggleTestStatus(test: TestDto): void {
+    if (!test.id) {
+      this.error = 'Impossible de modifier le statut: ID manquant';
+      return;
+    }
+
+    const newStatus = !test.isActive;
+    const action = newStatus ? 'activer' : 'désactiver';
+
+    if (confirm(`Voulez-vous ${action} le test "${test.title}" ?`)) {
+      this.isLoading = true;
+      this.error = null;
+
+      // Créer une copie mise à jour du test
+      const updatedTest: TestDto = {
+        ...test,
+        isActive: newStatus,
+      };
+
+      this.testService.updateTest(updatedTest).subscribe({
+        next: () => {
+          console.log(`Test ${action} successfully`);
+
+          // Mettre à jour le test dans la liste locale
+          const index = this.tests.findIndex((t) => t.id === test.id);
+          if (index !== -1) {
+            this.tests[index] = updatedTest;
+          }
+
+          // Mettre à jour le test sélectionné si c'est le même
+          if (this.selectedTest?.id === test.id) {
+            this.selectedTest = updatedTest;
+          }
+
+          this.error = null;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error(`Error ${action} test:`, error);
+          this.error = `Erreur lors de la modification du statut: ${
+            error.message || 'Erreur inconnue'
+          }`;
           this.isLoading = false;
         },
       });
@@ -277,6 +347,18 @@ export class TestsComponent implements OnInit {
     }
   }
 
+  // Convertir le mode en libellé
+  getModeLabel(mode: number): string {
+    switch (mode) {
+      case 0:
+        return 'Training';
+      case 1:
+        return 'Recruitment';
+      default:
+        return 'Unknown';
+    }
+  }
+
   get filteredTests(): TestDto[] {
     return this.tests;
   }
@@ -284,5 +366,19 @@ export class TestsComponent implements OnInit {
   // Optimisation des performances pour ngFor
   trackByTestId(index: number, test: TestDto): number {
     return test.id || index;
+  }
+
+  // ✅ NOUVEAU: Vérifier si un test peut être supprimé
+  canDeleteTest(test: TestDto): boolean {
+    // On peut supprimer un test s'il n'est pas actif
+    // Ou selon les règles métier de votre application
+    return !test.isActive;
+  }
+
+  // ✅ NOUVEAU: Vérifier si un test peut être modifié
+  canEditTest(test: TestDto): boolean {
+    // On peut modifier un test s'il n'est pas actif
+    // Ou selon les règles métier de votre application
+    return !test.isActive;
   }
 }

@@ -1,8 +1,8 @@
-// src/app/core/services/question.service.ts - VERSION CORRIGÉE
+// src/app/core/services/question.service.ts - VERSION CORRIGÉE AVEC IDs COURTS
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface QuestionChoice {
@@ -42,6 +42,9 @@ export interface ApiResponse {
 export class QuestionService {
   private apiUrl = `${environment.apiUrl}/Questions`;
 
+  // ✅ AJOUTÉ : Compteur statique pour des IDs courts
+  private static choiceIdCounter = 1;
+
   constructor(private http: HttpClient) {}
 
   // Récupérer les questions d'un test
@@ -51,6 +54,11 @@ export class QuestionService {
     return this.http
       .get<QuestionDto[]>(`${this.apiUrl}/GetQuestionsByTestId`, { params })
       .pipe(
+        tap((questions) => {
+          console.log(
+            `Loaded ${questions.length} questions for test ${testId}`
+          );
+        }),
         catchError((error) => {
           console.error('Error loading questions:', error);
           throw error;
@@ -58,11 +66,25 @@ export class QuestionService {
       );
   }
 
-  // Créer une nouvelle question - CORRIGÉ
+  // Récupérer toutes les questions - CORRIGÉ
+  getAllQuestions(): Observable<QuestionDto[]> {
+    console.log('Getting all questions from API');
+    return this.http.get<QuestionDto[]>(this.apiUrl).pipe(
+      tap((questions) => {
+        console.log(`Loaded ${questions.length} total questions from API`);
+      }),
+      catchError((error) => {
+        console.error('Error loading all questions from API:', error);
+        console.warn('Falling back to mock data');
+        return this.getMockQuestions();
+      })
+    );
+  }
+
+  // Créer une nouvelle question
   createQuestion(question: CreateQuestionRequest): Observable<ApiResponse> {
     console.log('Creating question:', question);
 
-    // Préparer les données exactement comme attendu par le backend
     const requestData = {
       content: question.content,
       type: question.type,
@@ -75,9 +97,8 @@ export class QuestionService {
     console.log('Sending to backend:', requestData);
 
     return this.http.post<ApiResponse>(this.apiUrl, requestData).pipe(
-      map((response) => {
+      tap((response) => {
         console.log('Create question response:', response);
-        return response;
       }),
       catchError((error) => {
         console.error('Error creating question:', error);
@@ -89,6 +110,9 @@ export class QuestionService {
   // Supprimer une question
   deleteQuestion(questionId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${questionId}`).pipe(
+      tap(() => {
+        console.log(`Question ${questionId} deleted successfully`);
+      }),
       catchError((error) => {
         console.error('Error deleting question:', error);
         throw error;
@@ -96,29 +120,33 @@ export class QuestionService {
     );
   }
 
-  // TEMPORAIREMENT DÉSACTIVÉ - Ces endpoints n'existent pas côté backend
-  // Récupérer toutes les questions - MOCK DATA pour l'instant
-  getAllQuestions(): Observable<QuestionDto[]> {
-    console.warn(
-      'getAllQuestions: Using mock data - backend endpoint not implemented'
-    );
-    return this.getMockQuestions();
-  }
-
-  // Assigner une question à un test - MOCK pour l'instant
+  // Assigner une question à un test - CORRIGÉ
   assignQuestionToTest(
     questionId: number,
     testId: number
   ): Observable<ApiResponse> {
-    console.warn(
-      'assignQuestionToTest: Using mock response - backend endpoint not implemented'
-    );
+    console.log(`Assigning question ${questionId} to test ${testId}`);
 
-    // Retourner une réponse mock pour éviter l'erreur 404
-    return of({
-      isSuccess: false,
-      error: "Cette fonctionnalité n'est pas encore implémentée côté backend",
-    });
+    return this.http
+      .post<ApiResponse>(
+        `${this.apiUrl}/${questionId}/assign-to-test/${testId}`,
+        {}
+      )
+      .pipe(
+        tap((response) => {
+          console.log('Assign question response:', response);
+        }),
+        catchError((error) => {
+          console.error('Error assigning question to test:', error);
+          // Retourner une erreur utilisable au lieu de faire échouer complètement
+          return of({
+            isSuccess: false,
+            error: `Erreur lors de l'assignation: ${
+              error.message || 'Erreur inconnue'
+            }`,
+          });
+        })
+      );
   }
 
   // Générer des questions avec OpenAI (si l'endpoint existe)
@@ -133,7 +161,11 @@ export class QuestionService {
       .pipe(
         catchError((error) => {
           console.error('Error generating questions:', error);
-          throw error;
+          return of({
+            isSuccess: false,
+            error:
+              "La génération automatique de questions n'est pas encore disponible",
+          });
         })
       );
   }
@@ -174,12 +206,32 @@ export class QuestionService {
     }
   }
 
-  // Générer un ID unique pour les nouveaux choix
+  // ✅ CORRIGÉ : Générer un ID court pour les nouveaux choix
   generateChoiceId(): number {
-    return Date.now() + Math.floor(Math.random() * 1000);
+    return QuestionService.choiceIdCounter++;
   }
 
-  // Données mock pour les tests
+  // ✅ AJOUTÉ : Générer un ID basé sur l'index (alternative)
+  generateChoiceIdFromIndex(index: number): number {
+    return index + 1;
+  }
+
+  // ✅ AJOUTÉ : Réinitialiser le compteur d'IDs
+  resetChoiceIdCounter(): void {
+    QuestionService.choiceIdCounter = 1;
+  }
+
+  // ✅ AJOUTÉ : Générer des IDs séquentiels pour une liste de choix
+  generateChoiceIdsForNewQuestion(numberOfChoices: number): number[] {
+    this.resetChoiceIdCounter();
+    const ids: number[] = [];
+    for (let i = 0; i < numberOfChoices; i++) {
+      ids.push(this.generateChoiceId());
+    }
+    return ids;
+  }
+
+  // Données mock pour les tests - ✅ CORRIGÉ avec IDs courts
   private getMockQuestions(): Observable<QuestionDto[]> {
     const mockQuestions: QuestionDto[] = [
       {
@@ -187,7 +239,7 @@ export class QuestionService {
         content: 'What is Angular?',
         type: 0, // Single choice
         answerDetails: 'Angular is a TypeScript-based web framework',
-        quizTestId: 0,
+        quizTestId: 0, // Non assignée
         choices: [
           { id: 1, content: 'A TypeScript framework' },
           { id: 2, content: 'A JavaScript library' },
@@ -201,7 +253,7 @@ export class QuestionService {
         content: 'Select all frontend frameworks:',
         type: 1, // Multiple choice
         answerDetails: 'Angular, React, and Vue are frontend frameworks',
-        quizTestId: 0,
+        quizTestId: 0, // Non assignée
         choices: [
           { id: 1, content: 'Angular' },
           { id: 2, content: 'React' },
@@ -210,12 +262,23 @@ export class QuestionService {
         ],
         listOfCorrectAnswerIds: '[1,2,3]',
       },
+      {
+        id: 3,
+        content: 'What is TypeScript?',
+        type: 0,
+        answerDetails: 'TypeScript is a superset of JavaScript',
+        quizTestId: 0, // Non assignée
+        choices: [
+          { id: 1, content: 'A superset of JavaScript' },
+          { id: 2, content: 'A database' },
+          { id: 3, content: 'A CSS preprocessor' },
+          { id: 4, content: 'An image format' },
+        ],
+        listOfCorrectAnswerIds: '[1]',
+      },
     ];
 
-    return new Observable((observer) => {
-      observer.next(mockQuestions);
-      observer.complete();
-    });
+    return of(mockQuestions);
   }
 
   // Helper methods pour la conversion des types
