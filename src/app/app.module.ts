@@ -1,7 +1,11 @@
+// src/app/app.module.ts - Version mise à jour avec surveillance
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+
+// Webcam module
+import { WebcamModule } from 'ngx-webcam';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -20,6 +24,7 @@ import { TestResultComponent } from './shared/components/test-result/test-result
 import { QuestionAnswerComponent } from './shared/components/question-answer/question-answer.component';
 import { LoginComponent } from './shared/components/login/login.component';
 import { QuestionManagementComponent } from './shared/components/question-management/question-management.component';
+import { WebcamComponent } from './shared/components/webcam/webcam.component'; // ✅ NOUVEAU
 
 // Interceptors
 import { JwtInterceptor } from './core/interceptors/jwt.interceptor';
@@ -35,7 +40,8 @@ import { DashboardService } from './core/services/dashboard.service';
 import { CandidateEventService } from './core/services/candidate-event.service';
 import { LoadingService } from './core/services/loading.service';
 import { ErrorService } from './core/services/error.service';
-import { QuestionService } from './core/services/question.service'; // ✅ Import ajouté
+import { QuestionService } from './core/services/question.service';
+import { SurveillanceService } from './core/services/surveillance.service'; // ✅ NOUVEAU
 
 @NgModule({
   declarations: [
@@ -53,6 +59,7 @@ import { QuestionService } from './core/services/question.service'; // ✅ Impor
     QuestionAnswerComponent,
     LoginComponent,
     QuestionManagementComponent,
+    WebcamComponent, // ✅ AJOUTÉ
   ],
   imports: [
     BrowserModule,
@@ -60,6 +67,7 @@ import { QuestionService } from './core/services/question.service'; // ✅ Impor
     FormsModule,
     ReactiveFormsModule,
     HttpClientModule,
+    WebcamModule, // ✅ AJOUTÉ pour la webcam
   ],
   providers: [
     // Services
@@ -71,7 +79,8 @@ import { QuestionService } from './core/services/question.service'; // ✅ Impor
     CandidateEventService,
     LoadingService,
     ErrorService,
-    QuestionService, // ✅ AJOUTÉ !
+    QuestionService,
+    SurveillanceService, // ✅ AJOUTÉ
 
     // HTTP Interceptors
     {

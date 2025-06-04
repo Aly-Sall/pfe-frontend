@@ -10,12 +10,16 @@ import { TestTakingComponent } from './shared/components/test-taking/test-taking
 import { TestResultComponent } from './shared/components/test-result/test-result.component';
 import { LoginComponent } from './shared/components/login/login.component';
 import { QuestionManagementComponent } from './shared/components/question-management/question-management.component';
+import { TestInvitationComponent } from './shared/components/test-invitation/test-invitation.component';
+import { TestAccessComponent } from './shared/components/test-access/test-access.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'tests', component: TestsComponent },
+  { path: 'test-invitation/:testId', component: TestInvitationComponent },
+  { path: 'test-access/:token', component: TestAccessComponent },
   {
     path: 'questions',
     component: QuestionManagementComponent,

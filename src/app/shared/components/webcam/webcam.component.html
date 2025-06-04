@@ -1,0 +1,241 @@
+<!-- src/app/shared/components/webcam/webcam.component.html -->
+<div class="webcam-surveillance-container">
+  <!-- En-tête de contrôle -->
+  <div class="surveillance-header">
+    <div class="status-info">
+      <div
+        class="status-indicator"
+        [ngClass]="{
+          active: isMonitoring && hasPermissions,
+          warning: isMonitoring && !hasPermissions,
+          inactive: !isMonitoring
+        }"
+      >
+        <i class="fas fa-circle"></i>
+        <span>{{ getSurveillanceStatus() }}</span>
+      </div>
+      <div class="capture-count" *ngIf="captureCount > 0">
+        <i class="fas fa-camera"></i>
+        <span>{{ captureCount }} captures</span>
+      </div>
+    </div>
+
+    <div class="control-buttons">
+      <button
+        class="btn btn-sm btn-outline-primary"
+        (click)="toggleWebcam()"
+        title="Basculer l'affichage webcam"
+      >
+        <i
+          class="fas"
+          [class.fa-eye]="!showWebcam"
+          [class.fa-eye-slash]="showWebcam"
+        ></i>
+      </button>
+
+      <button
+        class="btn btn-sm btn-primary"
+        (click)="triggerSnapshot()"
+        [disabled]="!showWebcam || !hasPermissions"
+        title="Prendre une photo"
+      >
+        <i class="fas fa-camera"></i>
+      </button>
+
+      <button
+        class="btn btn-sm btn-secondary"
+        (click)="captureScreen()"
+        [disabled]="!permissions.screen"
+        title="Capturer l'écran"
+      >
+        <i class="fas fa-desktop"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Message de permissions -->
+  <div class="permissions-warning" *ngIf="!hasPermissions">
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>
+        Les permissions de la caméra sont requises pour la surveillance.
+      </span>
+      <button class="btn btn-sm btn-warning" (click)="requestPermissions()">
+        <i class="fas fa-unlock"></i>
+        Accorder les permissions
+      </button>
+    </div>
+  </div>
+
+  <!-- Zone webcam -->
+  <div class="webcam-area" *ngIf="showWebcam">
+    <div class="webcam-container" [class.monitoring]="isMonitoring">
+      <webcam
+        [height]="240"
+        [width]="320"
+        [trigger]="triggerObservable"
+        (imageCapture)="handleImage($event)"
+        [allowCameraSwitch]="true"
+        [videoOptions]="{ facingMode: 'user' }"
+        [captureImageData]="true"
+      >
+      </webcam>
+
+      <!-- Overlay de surveillance -->
+      <div class="surveillance-overlay" *ngIf="isMonitoring">
+        <div class="recording-indicator">
+          <i class="fas fa-circle recording-dot"></i>
+          <span>SURVEILLANCE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contrôles de surveillance -->
+    <div class="surveillance-controls">
+      <div class="control-group">
+        <button
+          class="btn btn-success"
+          *ngIf="!isMonitoring"
+          (click)="startSurveillance()"
+          [disabled]="!hasPermissions || !tentativeId"
+        >
+          <i class="fas fa-play"></i>
+          Démarrer la surveillance
+        </button>
+
+        <button
+          class="btn btn-danger"
+          *ngIf="isMonitoring"
+          (click)="stopSurveillance()"
+        >
+          <i class="fas fa-stop"></i>
+          Arrêter la surveillance
+        </button>
+      </div>
+
+      <div class="info-text" *ngIf="!tentativeId">
+        <small class="text-muted">
+          <i class="fas fa-info-circle"></i>
+          Un ID de tentative est requis pour démarrer la surveillance
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aperçu de la dernière capture -->
+  <div class="last-capture" *ngIf="webcamImage">
+    <h4>
+      <i class="fas fa-image"></i>
+      Dernière capture
+    </h4>
+
+    <div class="capture-preview">
+      <img [src]="webcamImage.imageAsDataUrl" alt="Dernière capture" />
+
+      <div class="capture-actions">
+        <button
+          class="btn btn-sm btn-outline-primary"
+          (click)="downloadImage('jpg')"
+          title="Télécharger en JPG"
+        >
+          <i class="fas fa-download"></i>
+          JPG
+        </button>
+
+        <button
+          class="btn btn-sm btn-outline-primary"
+          (click)="downloadImage('png')"
+          title="Télécharger en PNG"
+        >
+          <i class="fas fa-download"></i>
+          PNG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historique des captures (mode surveillance) -->
+  <div
+    class="capture-history"
+    *ngIf="isMonitoring && captureHistory.length > 0"
+  >
+    <div class="history-header">
+      <h4>
+        <i class="fas fa-history"></i>
+        Historique ({{ captureHistory.length }})
+      </h4>
+
+      <button
+        class="btn btn-sm btn-outline-danger"
+        (click)="clearHistory()"
+        title="Effacer l'historique"
+      >
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+
+    <div class="history-grid">
+      <div
+        class="history-item"
+        *ngFor="let capture of captureHistory; let i = index"
+        [title]="'Capture ' + (i + 1)"
+      >
+        <img [src]="capture.imageAsDataUrl" [alt]="'Capture ' + (i + 1)" />
+        <div class="item-overlay">
+          <span class="item-number">{{ i + 1 }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Informations de débogage (mode développement) -->
+  <div class="debug-info" *ngIf="!isMonitoring">
+    <details>
+      <summary>
+        <i class="fas fa-cog"></i>
+        Informations techniques
+      </summary>
+
+      <div class="debug-content">
+        <div class="info-row">
+          <span class="label">Permissions caméra:</span>
+          <span
+            class="value"
+            [class.text-success]="permissions.camera"
+            [class.text-danger]="!permissions.camera"
+          >
+            {{ permissions.camera ? "Accordées" : "Refusées" }}
+          </span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Support capture d'écran:</span>
+          <span
+            class="value"
+            [class.text-success]="permissions.screen"
+            [class.text-danger]="!permissions.screen"
+          >
+            {{ permissions.screen ? "Supporté" : "Non supporté" }}
+          </span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">ID Tentative:</span>
+          <span class="value">{{ tentativeId || "Non défini" }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Capture automatique:</span>
+          <span class="value">{{
+            autoCapture ? "Activée" : "Désactivée"
+          }}</span>
+        </div>
+
+        <div class="info-row" *ngIf="autoCapture">
+          <span class="label">Intervalle:</span>
+          <span class="value">{{ captureInterval }}s</span>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>

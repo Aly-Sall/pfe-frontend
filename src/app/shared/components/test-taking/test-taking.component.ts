@@ -1,4 +1,4 @@
-// src/app/shared/components/test-taking/test-taking.component.ts
+// src/app/shared/components/test-taking/test-taking.component.ts - Version avec surveillance
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -10,6 +10,7 @@ import {
   TestAttemptService,
   TestAttemptDto,
 } from '../../../core/services/test-attempt.service';
+import { SurveillanceService } from '../../../core/services/surveillance.service';
 import { Subscription, interval } from 'rxjs';
 import { take } from 'rxjs/operators';
 
@@ -37,6 +38,12 @@ export class TestTakingComponent implements OnInit, OnDestroy {
   // Progress tracking
   answeredQuestions: Set<number> = new Set();
 
+  // Surveillance properties
+  surveillanceEnabled: boolean = false;
+  currentTentativeId: number | null = null;
+  suspiciousActivityCount: number = 0;
+  surveillancePermissions = { camera: false, screen: false };
+
   // Subscriptions
   private subscriptions: Subscription[] = [];
 
@@ -44,11 +51,13 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private testService: TestService,
-    public attemptService: TestAttemptService
+    public attemptService: TestAttemptService,
+    private surveillanceService: SurveillanceService
   ) {}
 
   ngOnInit(): void {
     this.loadTest();
+    this.setupSurveillanceSubscriptions();
   }
 
   ngOnDestroy(): void {
@@ -57,6 +66,9 @@ export class TestTakingComponent implements OnInit, OnDestroy {
 
     // Stop the timer if active
     this.attemptService.stopTimer();
+
+    // Stop surveillance
+    this.stopSurveillance();
   }
 
   loadTest(): void {
@@ -75,6 +87,9 @@ export class TestTakingComponent implements OnInit, OnDestroy {
       next: (test) => {
         this.test = test;
 
+        // Vérifier si la surveillance est requise (mode recrutement)
+        this.surveillanceEnabled = test.mode === 1; // 1 = Recruitment
+
         // Load questions for the test
         this.testService.getTestQuestions(Number(testId)).subscribe({
           next: (questions) => {
@@ -91,6 +106,11 @@ export class TestTakingComponent implements OnInit, OnDestroy {
             // Check if there's a saved attempt
             if (this.attemptService.hasSavedAnswers(Number(testId))) {
               this.showRestorePrompt();
+            }
+
+            // Vérifier les permissions de surveillance si nécessaire
+            if (this.surveillanceEnabled) {
+              this.checkSurveillancePermissions();
             }
 
             this.isLoading = false;
@@ -113,6 +133,7 @@ export class TestTakingComponent implements OnInit, OnDestroy {
 
     this.attemptService.startTest(this.test.id).subscribe({
       next: (attempt) => {
+        this.currentTentativeId = attempt.id || null;
         this.isStarted = true;
         this.isLoading = false;
 
@@ -133,16 +154,9 @@ export class TestTakingComponent implements OnInit, OnDestroy {
           this.subscriptions.push(timerSub);
         }
 
-        // Setup automatic surveillance if needed (every minute)
-        if (this.test?.mode === 1) {
-          // Recruitment mode enables surveillance
-          const surveillanceSub = interval(60000).subscribe(() => {
-            this.captureSurveillance();
-          });
-          this.subscriptions.push(surveillanceSub);
-
-          // Initial capture
-          this.captureSurveillance();
+        // Démarrer la surveillance si activée et permissions accordées
+        if (this.surveillanceEnabled && this.currentTentativeId) {
+          this.startSurveillance();
         }
       },
       error: (error) => {
@@ -186,6 +200,9 @@ export class TestTakingComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
 
+    // Arrêter la surveillance avant de soumettre
+    this.stopSurveillance();
+
     this.attemptService.completeTest().subscribe({
       next: (result) => {
         this.isCompleted = true;
@@ -198,21 +215,104 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private captureSurveillance(): void {
-    // In a real application, this would capture the screen or use webcam
-    // For this demo, we're just sending a placeholder
-    const captureData = `data:image/png;base64,${this.generateDummyBase64()}`;
+  // ===============================
+  // MÉTHODES DE SURVEILLANCE
+  // ===============================
 
-    this.attemptService.submitSurveillance(captureData).subscribe({
-      error: (error) => {
-        console.error('Failed to submit surveillance data', error);
-      },
-    });
+  private async checkSurveillancePermissions(): Promise<void> {
+    try {
+      this.surveillancePermissions =
+        await this.surveillanceService.checkPermissions();
+      console.log('📋 Surveillance permissions:', this.surveillancePermissions);
+    } catch (error) {
+      console.error('❌ Error checking surveillance permissions:', error);
+    }
   }
 
-  private generateDummyBase64(): string {
-    // Just a dummy string to represent a base64 image
-    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  public async requestSurveillancePermissions(): Promise<boolean> {
+    try {
+      const granted = await this.surveillanceService.requestPermissions();
+      if (granted) {
+        await this.checkSurveillancePermissions();
+      }
+      return granted;
+    } catch (error) {
+      console.error('❌ Error requesting surveillance permissions:', error);
+      return false;
+    }
+  }
+
+  private startSurveillance(): void {
+    if (!this.currentTentativeId) {
+      console.warn('⚠️ Cannot start surveillance: no tentative ID');
+      return;
+    }
+
+    console.log('🔍 Starting test surveillance');
+
+    const config = {
+      webcamEnabled: true,
+      screenCaptureEnabled: true,
+      focusMonitoringEnabled: true,
+      captureInterval: 60, // Capture toutes les 60 secondes
+      tentativeId: this.currentTentativeId,
+    };
+
+    this.surveillanceService.startMonitoring(config);
+  }
+
+  private stopSurveillance(): void {
+    console.log('🛑 Stopping test surveillance');
+    this.surveillanceService.stopMonitoring();
+  }
+
+  private setupSurveillanceSubscriptions(): void {
+    // S'abonner au compteur d'activités suspectes
+    const suspiciousSub =
+      this.surveillanceService.suspiciousActivityCount$.subscribe((count) => {
+        this.suspiciousActivityCount = count;
+
+        // Alerter si trop d'activités suspectes
+        if (count >= 3) {
+          this.showSuspiciousActivityWarning();
+        }
+      });
+
+    this.subscriptions.push(suspiciousSub);
+  }
+
+  private showSuspiciousActivityWarning(): void {
+    const message = `
+      ⚠️ ATTENTION ⚠️
+      
+      Un nombre élevé d'activités suspectes a été détecté (${this.suspiciousActivityCount}).
+      
+      Rappel des règles :
+      - Ne quittez pas la fenêtre du test
+      - Ne consultez pas d'autres sites web
+      - Restez face à la caméra
+      
+      Continuez à respecter les consignes pour éviter l'invalidation de votre test.
+    `;
+
+    alert(message);
+  }
+
+  // Méthodes pour le composant webcam
+  onSurveillanceEvent(event: any): void {
+    console.log('📊 Surveillance event:', event);
+
+    if (!event.success) {
+      console.warn('⚠️ Surveillance event failed:', event.error);
+    }
+  }
+
+  // Helper method to get the progress percentage
+  getProgressPercentage(): number {
+    if (!this.questions.length) return 0;
+    return Math.round(
+      (this.answeredQuestions.size / this.questions.length) * 100
+    );
   }
 
   private showRestorePrompt(): void {
@@ -243,11 +343,39 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     this.isLoading = false;
   }
 
-  // Helper method to get the progress percentage
-  getProgressPercentage(): number {
-    if (!this.questions.length) return 0;
-    return Math.round(
-      (this.answeredQuestions.size / this.questions.length) * 100
+  // Getters pour le template
+  get shouldShowSurveillanceWarning(): boolean {
+    return (
+      this.surveillanceEnabled &&
+      !this.surveillancePermissions.camera &&
+      this.isStarted
     );
+  }
+
+  get surveillanceStatus(): string {
+    if (!this.surveillanceEnabled) return 'Désactivée';
+    if (!this.surveillancePermissions.camera) return 'Permissions requises';
+    if (this.isStarted) return 'Active';
+    return 'En attente';
+  }
+
+  get canStartTest(): boolean {
+    if (!this.surveillanceEnabled) return true;
+    return this.surveillancePermissions.camera;
+  }
+
+  // Méthode pour demander les permissions avant de démarrer
+  async prepareAndStartTest(): Promise<void> {
+    if (this.surveillanceEnabled && !this.surveillancePermissions.camera) {
+      const granted = await this.requestSurveillancePermissions();
+      if (!granted) {
+        alert(
+          'Les permissions de surveillance sont requises pour ce test de recrutement.'
+        );
+        return;
+      }
+    }
+
+    this.startTest();
   }
 }
