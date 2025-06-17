@@ -41,7 +41,8 @@ import { CandidateEventService } from './core/services/candidate-event.service';
 import { LoadingService } from './core/services/loading.service';
 import { ErrorService } from './core/services/error.service';
 import { QuestionService } from './core/services/question.service';
-import { SurveillanceService } from './core/services/surveillance.service'; // ✅ NOUVEAU
+import { SurveillanceService } from './core/services/surveillance.service';
+import { CandidateTestsComponent } from './candidate-tests/candidate-tests.component'; // ✅ NOUVEAU
 
 @NgModule({
   declarations: [
@@ -59,7 +60,8 @@ import { SurveillanceService } from './core/services/surveillance.service'; // �
     QuestionAnswerComponent,
     LoginComponent,
     QuestionManagementComponent,
-    WebcamComponent, // ✅ AJOUTÉ
+    WebcamComponent,
+    CandidateTestsComponent, // ✅ AJOUTÉ
   ],
   imports: [
     BrowserModule,

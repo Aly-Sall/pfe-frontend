@@ -1,4 +1,4 @@
-<!-- src/app/shared/components/test-taking/test-taking.component.html - Version avec surveillance -->
+<!-- ✅ TEMPLATE SÉCURISÉ CORRIGÉ : test-taking.component.html -->
 <div class="test-taking-container">
   <!-- Écran de chargement -->
   <div *ngIf="isLoading" class="loading-screen">
@@ -50,17 +50,14 @@
             test?.tryAgain ? "Allowed" : "Not Allowed"
           }}</span>
         </div>
-        <!-- Nouvelle section pour la surveillance -->
-        <div class="meta-item" *ngIf="surveillanceEnabled">
+        <!-- ✅ Section surveillance OBLIGATOIRE -->
+        <div class="meta-item surveillance-mandatory">
           <span class="meta-label">Surveillance:</span>
           <span
             class="meta-value surveillance-status"
-            [ngClass]="{
-              'status-active': surveillancePermissions.camera,
-              'status-warning': !surveillancePermissions.camera
-            }"
+            [ngClass]="surveillanceStatusClass"
           >
-            <i class="fas fa-video"></i>
+            <i class="fas" [ngClass]="surveillanceIconClass"></i>
             {{ surveillanceStatus }}
           </span>
         </div>
@@ -76,34 +73,78 @@
             You have 30 minutes to complete this test. The test will
             automatically submit when the time expires.
           </li>
-          <!-- Instructions de surveillance -->
-          <li *ngIf="surveillanceEnabled" class="surveillance-instruction">
-            <strong>⚠️ Surveillance Active:</strong>
-            This test includes monitoring for academic integrity. Your webcam
-            and screen activity will be monitored throughout the test.
+          <!-- ✅ Instructions de surveillance OBLIGATOIRE -->
+          <li class="surveillance-instruction mandatory">
+            <strong>🔒 MANDATORY SURVEILLANCE:</strong>
+            This test includes continuous monitoring for academic integrity.
+            Your webcam and screen activity will be monitored throughout the
+            test.
           </li>
-          <li *ngIf="surveillanceEnabled">
-            Stay focused on the test window and avoid leaving the browser tab.
+          <li class="surveillance-rule">
+            <strong>📷 Stay visible:</strong> Keep yourself clearly positioned
+            in front of your camera.
           </li>
-          <li *ngIf="surveillanceEnabled">
-            Position yourself clearly in front of your camera.
+          <li class="surveillance-rule">
+            <strong>🖥️ Stay focused:</strong> Do not leave this browser tab or
+            switch applications.
+          </li>
+          <li class="surveillance-rule">
+            <strong>🚫 No external help:</strong> Do not use external resources,
+            websites, or tools.
+          </li>
+          <li class="surveillance-rule">
+            <strong>⚠️ Detection system:</strong> Suspicious activities are
+            automatically detected and reported.
+          </li>
+          <li class="final-rule">
+            <strong>🔐 Cannot be disabled:</strong> Surveillance cannot be
+            turned off during the test.
           </li>
           <li>Once you submit the test, you cannot change your answers.</li>
         </ul>
       </div>
 
-      <!-- Avertissement de surveillance si permissions manquantes -->
-      <div class="surveillance-warning" *ngIf="shouldShowSurveillanceWarning">
-        <div class="warning-card">
-          <i class="fas fa-exclamation-triangle"></i>
-          <div class="warning-content">
-            <h4>Surveillance Required</h4>
+      <!-- ✅ Avertissement de surveillance obligatoire -->
+      <div class="surveillance-notice mandatory-notice">
+        <div class="notice-card">
+          <div class="notice-header">
+            <i class="fas fa-shield-alt"></i>
+            <h4>Mandatory Test Monitoring</h4>
+          </div>
+          <div class="notice-content">
             <p>
-              This recruitment test requires camera access for monitoring
-              purposes. Please grant camera permissions to proceed.
+              <strong
+                >By starting this test, you agree to continuous
+                monitoring:</strong
+              >
             </p>
+            <ul>
+              <li>✅ Webcam recording during the entire test</li>
+              <li>✅ Screen activity monitoring</li>
+              <li>✅ Focus and tab-switching detection</li>
+              <li>✅ Automatic suspicious activity reporting</li>
+              <li>❌ No option to disable surveillance</li>
+              <li>❌ No manual control over monitoring</li>
+            </ul>
+            <div class="warning-box">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>
+                Multiple violations may result in automatic test termination
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ Avertissement de permissions manquantes -->
+      <div class="permissions-error" *ngIf="error">
+        <div class="error-card">
+          <i class="fas fa-camera-slash"></i>
+          <div class="error-content">
+            <h4>Camera Access Required</h4>
+            <p>{{ error }}</p>
             <button
-              class="btn-warning"
+              class="btn-permission"
               (click)="requestSurveillancePermissions()"
             >
               <i class="fas fa-camera"></i>
@@ -120,12 +161,13 @@
           [disabled]="!canStartTest"
         >
           <i class="fas fa-play"></i>
-          Start Test
+          <span *ngIf="canStartTest">Start Monitored Test</span>
+          <span *ngIf="!canStartTest">Camera Access Required</span>
         </button>
         <div class="start-info" *ngIf="!canStartTest">
-          <small class="text-muted">
+          <small class="text-warning">
             <i class="fas fa-info-circle"></i>
-            Camera permissions required for this test
+            Camera permissions are mandatory for all tests
           </small>
         </div>
       </div>
@@ -154,19 +196,15 @@
         </div>
       </div>
 
-      <!-- Surveillance status dans l'en-tête -->
-      <div class="surveillance-header" *ngIf="surveillanceEnabled">
-        <div
-          class="surveillance-indicator"
-          [ngClass]="{
-            active: suspiciousActivityCount < 3,
-            warning: suspiciousActivityCount >= 3
-          }"
-        >
-          <i class="fas fa-shield-alt"></i>
-          <span>Surveillance</span>
+      <!-- ✅ Surveillance status OBLIGATOIRE dans l'en-tête -->
+      <div class="surveillance-header mandatory-monitoring">
+        <div class="surveillance-indicator" [ngClass]="surveillanceStatusClass">
+          <i class="fas" [ngClass]="surveillanceIconClass"></i>
+          <span>MONITORED</span>
+          <div class="monitoring-dot"></div>
           <div class="activity-counter" *ngIf="suspiciousActivityCount > 0">
-            {{ suspiciousActivityCount }}
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>{{ suspiciousActivityCount }}</span>
           </div>
         </div>
       </div>
@@ -181,7 +219,7 @@
       </div>
     </div>
 
-    <!-- Contenu principal - la question actuelle -->
+    <!-- Contenu principal -->
     <div class="test-content">
       <!-- Navigation latérale des questions -->
       <div class="question-nav">
@@ -199,7 +237,7 @@
         </div>
       </div>
 
-      <!-- Zone de la question -->
+      <!-- Zone de la question principale -->
       <div class="question-area">
         <div *ngIf="currentQuestion" class="question-container">
           <div class="question-header">
@@ -251,19 +289,62 @@
         </div>
       </div>
 
-      <!-- Composant de surveillance webcam (si activé) -->
-      <div class="surveillance-panel" *ngIf="surveillanceEnabled && isStarted">
+      <!-- ✅ Composant de surveillance OBLIGATOIRE (côté droit) -->
+      <div class="surveillance-panel mandatory-panel" *ngIf="isStarted">
+        <div class="panel-header">
+          <h4>
+            <i class="fas fa-shield-alt"></i>
+            Test Monitoring
+          </h4>
+          <div class="status-badge active">
+            <i class="fas fa-circle"></i>
+            ACTIVE
+          </div>
+        </div>
+
+        <!-- ✅ Webcam en mode surveillance obligatoire (PROPRIÉTÉS CORRIGÉES) -->
         <app-webcam
           [tentativeId]="currentTentativeId!"
+          [testMode]="test?.mode || 0"
+          [isTestActive]="isStarted"
           [autoCapture]="true"
-          [captureInterval]="60"
+          [captureInterval]="45"
           (surveillanceEvent)="onSurveillanceEvent($event)"
         >
         </app-webcam>
+
+        <!-- Statistiques de surveillance -->
+        <div class="surveillance-stats">
+          <div class="stat-item">
+            <span class="stat-label">Status:</span>
+            <span class="stat-value active">Monitoring</span>
+          </div>
+          <div class="stat-item" *ngIf="suspiciousActivityCount > 0">
+            <span class="stat-label">Alerts:</span>
+            <span class="stat-value warning">{{
+              suspiciousActivityCount
+            }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Mode:</span>
+            <span class="stat-value">Mandatory</span>
+          </div>
+        </div>
+
+        <!-- Règles de surveillance -->
+        <div class="surveillance-rules">
+          <h5>🔒 Monitoring Rules</h5>
+          <ul>
+            <li>Stay visible to camera</li>
+            <li>Keep focus on test</li>
+            <li>No external resources</li>
+            <li>No tab switching</li>
+          </ul>
+        </div>
       </div>
     </div>
 
-    <!-- Bouton de soumission du test -->
+    <!-- Pied de page avec informations -->
     <div class="test-footer">
       <div class="footer-info">
         <div class="completion-info">
@@ -276,48 +357,124 @@
           }}
         </div>
 
-        <!-- Informations de surveillance -->
-        <div class="surveillance-info" *ngIf="surveillanceEnabled">
+        <!-- ✅ Informations de surveillance obligatoire -->
+        <div class="surveillance-info mandatory">
           <div class="info-item">
-            <i class="fas fa-eye"></i>
-            <span>Monitoring: Active</span>
+            <i class="fas fa-shield-alt"></i>
+            <span>Surveillance: Active & Mandatory</span>
           </div>
           <div class="info-item" *ngIf="suspiciousActivityCount > 0">
             <i class="fas fa-exclamation-triangle"></i>
-            <span>Alerts: {{ suspiciousActivityCount }}</span>
+            <span>Violations: {{ suspiciousActivityCount }}</span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-lock"></i>
+            <span>Cannot be disabled</span>
           </div>
         </div>
       </div>
 
       <button class="btn-submit-test" (click)="completeTest()">
-        Submit Test
+        <i class="fas fa-check"></i>
+        Submit Monitored Test
       </button>
     </div>
   </div>
 
-  <!-- Avertissement d'activité suspecte (overlay) -->
+  <!-- ✅ Overlay d'avertissement pour activité suspecte (modal critique) -->
   <div class="suspicious-activity-overlay" *ngIf="suspiciousActivityCount >= 5">
-    <div class="warning-modal">
+    <div class="warning-modal critical">
       <div class="warning-header">
         <i class="fas fa-exclamation-triangle"></i>
-        <h3>Multiple Violations Detected</h3>
+        <h3>🚨 CRITICAL: Multiple Violations Detected</h3>
       </div>
       <div class="warning-body">
-        <p>Your test session has been flagged for suspicious activity.</p>
-        <p>Please ensure you:</p>
-        <ul>
-          <li>Stay focused on the test window</li>
-          <li>Do not leave the browser tab</li>
-          <li>Remain visible to the camera</li>
-          <li>Do not use external resources</li>
-        </ul>
         <p>
-          <strong>Further violations may result in test termination.</strong>
+          <strong
+            >Your test session has been flagged for suspicious activity.</strong
+          >
         </p>
+        <p>
+          Detected violations: <strong>{{ suspiciousActivityCount }}</strong>
+        </p>
+
+        <div class="violation-rules">
+          <h4>You MUST:</h4>
+          <ul>
+            <li>✅ Stay focused on the test window</li>
+            <li>✅ Keep yourself visible to the camera</li>
+            <li>✅ Remain in the browser tab</li>
+            <li>✅ Work independently</li>
+          </ul>
+
+          <h4>You CANNOT:</h4>
+          <ul>
+            <li>❌ Switch to other applications</li>
+            <li>❌ Open new tabs or windows</li>
+            <li>❌ Use external resources</li>
+            <li>❌ Cover or disable the camera</li>
+          </ul>
+        </div>
+
+        <div class="critical-warning">
+          <i class="fas fa-skull-crossbones"></i>
+          <p>
+            <strong
+              >WARNING: Further violations will result in automatic test
+              termination and failure.</strong
+            >
+          </p>
+        </div>
       </div>
       <div class="warning-actions">
-        <button class="btn-warning-ok" (click)="suspiciousActivityCount = 0">
-          I Understand
+        <button
+          class="btn-warning-acknowledge"
+          (click)="suspiciousActivityCount = 0"
+        >
+          <i class="fas fa-check"></i>
+          I Understand - Continue Test
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Overlay de blocage si surveillance échoue -->
+  <div
+    class="surveillance-failure-overlay"
+    *ngIf="!isSurveillanceActive && isStarted"
+  >
+    <div class="failure-modal">
+      <div class="failure-header">
+        <i class="fas fa-camera-slash"></i>
+        <h3>🚨 Surveillance System Failure</h3>
+      </div>
+      <div class="failure-body">
+        <p>The monitoring system is not functioning properly.</p>
+        <p>
+          <strong
+            >This test cannot continue without active surveillance.</strong
+          >
+        </p>
+
+        <div class="troubleshooting">
+          <h4>Troubleshooting:</h4>
+          <ul>
+            <li>Check your camera permissions</li>
+            <li>Ensure camera is not used by other applications</li>
+            <li>Refresh the page and try again</li>
+            <li>Contact technical support if the problem persists</li>
+          </ul>
+        </div>
+      </div>
+      <div class="failure-actions">
+        <!-- ✅ CORRIGÉ: Utilisation correcte de window -->
+        <button class="btn-reload" (click)="window.location.reload()">
+          <i class="fas fa-refresh"></i>
+          Reload Page
+        </button>
+        <button class="btn-support" routerLink="/dashboard">
+          <i class="fas fa-headset"></i>
+          Contact Support
         </button>
       </div>
     </div>

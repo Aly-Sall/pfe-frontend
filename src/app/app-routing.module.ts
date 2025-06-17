@@ -1,3 +1,4 @@
+// src/app/app-routing.module.ts - Version mise à jour avec guards
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
@@ -11,29 +12,98 @@ import { TestResultComponent } from './shared/components/test-result/test-result
 import { LoginComponent } from './shared/components/login/login.component';
 import { QuestionManagementComponent } from './shared/components/question-management/question-management.component';
 import { TestInvitationComponent } from './shared/components/test-invitation/test-invitation.component';
-import { TestAccessComponent } from './shared/components/test-access/test-access.component';
+import { CandidateTestsComponent } from './shared/components/candidate-tests/candidate-tests.component';
+
+// Guards
+import {
+  AuthGuard,
+  AdminGuard,
+  CandidateGuard,
+} from '../app/core/guards/auth.gard';
+import { UserRole } from './core/services/auth.service';
 
 const routes: Routes = [
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'tests', component: TestsComponent },
-  { path: 'test-invitation/:testId', component: TestInvitationComponent },
-  { path: 'test-access/:token', component: TestAccessComponent },
+  // Route par défaut - redirection intelligente
+  {
+    path: '',
+    redirectTo: '/login',
+    pathMatch: 'full',
+  },
+
+  // Page de connexion (accessible à tous)
+  {
+    path: 'login',
+    component: LoginComponent,
+  },
+
+  // Routes ADMIN uniquement
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    canActivate: [AdminGuard],
+  },
+  {
+    path: 'tests',
+    component: TestsComponent,
+    canActivate: [AdminGuard],
+  },
+  {
+    path: 'test-invitation/:testId',
+    component: TestInvitationComponent,
+    canActivate: [AdminGuard],
+  },
   {
     path: 'questions',
     component: QuestionManagementComponent,
-  }, // Sans testId - affichera la liste des tests
+    canActivate: [AdminGuard],
+  },
   {
     path: 'question-management/:testId',
     component: QuestionManagementComponent,
-  }, // Avec testId - gestion des questions du test
-  { path: 'candidates', component: CandidatesComponent },
-  { path: 'candidates/new', component: CandidateFormComponent },
-  { path: 'candidates/:id/edit', component: CandidateFormComponent },
-  { path: 'take-test/:id', component: TestTakingComponent },
-  { path: 'test-result', component: TestResultComponent },
-  { path: '**', redirectTo: '/dashboard' },
+    canActivate: [AdminGuard],
+  },
+  {
+    path: 'candidates',
+    component: CandidatesComponent,
+    canActivate: [AdminGuard],
+  },
+  {
+    path: 'candidates/new',
+    component: CandidateFormComponent,
+    canActivate: [AdminGuard],
+  },
+  {
+    path: 'candidates/:id/edit',
+    component: CandidateFormComponent,
+    canActivate: [AdminGuard],
+  },
+
+  // Routes CANDIDAT uniquement
+  {
+    path: 'candidate-tests',
+    component: CandidateTestsComponent,
+    canActivate: [CandidateGuard],
+  },
+
+  // Routes PARTAGÉES (Admin et Candidat)
+  {
+    path: 'take-test/:id',
+    component: TestTakingComponent,
+    canActivate: [AuthGuard],
+    data: { expectedRoles: [UserRole.Administrator, UserRole.Candidate] },
+  },
+  {
+    path: 'test-result',
+    component: TestResultComponent,
+    canActivate: [AuthGuard],
+    data: { expectedRoles: [UserRole.Administrator, UserRole.Candidate] },
+  },
+
+  // Route wildcard - redirection vers page appropriée selon le rôle
+  {
+    path: '**',
+    redirectTo: '/login',
+  },
 ];
 
 @NgModule({

@@ -1,4 +1,4 @@
-// src/app/shared/components/webcam/webcam.component.ts
+// src/app/shared/components/webcam/webcam.component.ts - Version surveillance obligatoire
 import {
   Component,
   OnInit,
@@ -18,309 +18,349 @@ import { SurveillanceService } from '../../../core/services/surveillance.service
 })
 export class WebcamComponent implements OnInit, OnDestroy {
   @Input() tentativeId!: number;
-  @Input() autoCapture: boolean = false;
-  @Input() captureInterval: number = 30; // secondes
+  @Input() testMode!: number; // 0: Training, 1: Recrutement
+  @Input() isTestActive: boolean = false; // Indique si le test est en cours
+  @Input() autoCapture: boolean = true; // Capture automatique (toujours true en surveillance)
+  @Input() captureInterval: number = 45; // Intervalle en secondes (remplace la constante)
   @Output() imageCapture = new EventEmitter<WebcamImage>();
   @Output() surveillanceEvent = new EventEmitter<any>();
+  @Output() permissionsStatus = new EventEmitter<{
+    camera: boolean;
+    screen: boolean;
+  }>();
 
-  title = 'webcam-surveillance';
-  showWebcam = true;
+  // Configuration webcam
+  title = 'surveillance-webcam';
   webcamImage: WebcamImage | null = null;
   trigger: Subject<void> = new Subject<void>();
 
-  // États de surveillance
-  isMonitoring = false;
+  // États de surveillance - AUCUN CONTRÔLE MANUEL
+  readonly isMonitoring = true; // Toujours en surveillance
+  readonly showWebcam = true; // Toujours visible
   permissions = { camera: false, screen: false };
   captureHistory: WebcamImage[] = [];
 
+  // Configuration de surveillance automatique
+  private readonly MAX_HISTORY = 20; // Limiter l'historique
+
   private subscriptions: Subscription[] = [];
+  private surveillanceInterval: any;
 
   constructor(private surveillanceService: SurveillanceService) {}
 
   async ngOnInit(): Promise<void> {
-    console.log('🎥 Webcam component initialized');
-
-    // Vérifier les permissions
-    await this.checkPermissions();
-
-    // S'abonner aux événements de surveillance
-    this.subscriptions.push(
-      this.surveillanceService.isMonitoring$.subscribe((isMonitoring) => {
-        this.isMonitoring = isMonitoring;
-        console.log('📊 Surveillance status changed:', isMonitoring);
-      })
+    console.log(
+      '🎥 Surveillance webcam initialisée - Mode:',
+      this.testMode === 0 ? 'Training' : 'Recrutement'
     );
 
-    // Écouter les événements de capture automatique
-    this.setupAutomaticCaptureListener();
+    // Vérifier les permissions dès l'initialisation
+    await this.checkAndRequestPermissions();
 
-    // Démarrer la capture automatique si activée
-    if (this.autoCapture && this.tentativeId) {
-      this.startAutomaticCapture();
+    // S'abonner aux changements d'état du test
+    this.setupTestStateMonitoring();
+
+    // Démarrer la surveillance si le test est actif
+    if (this.isTestActive && this.tentativeId) {
+      this.startAutomaticSurveillance();
     }
   }
 
   ngOnDestroy(): void {
-    console.log('🛑 Webcam component destroyed');
+    console.log('🛑 Surveillance webcam détruite');
     this.subscriptions.forEach((sub) => sub.unsubscribe());
-    this.stopAutomaticCapture();
+    this.stopAutomaticSurveillance();
   }
 
   /**
-   * Déclenche une capture d'image
+   * Vérification et demande automatique des permissions
    */
-  triggerSnapshot(): void {
-    console.log('📸 Triggering manual snapshot');
-    this.trigger.next();
-  }
+  private async checkAndRequestPermissions(): Promise<void> {
+    try {
+      console.log('🔐 Vérification des permissions...');
 
-  /**
-   * Gère l'image capturée
-   */
-  handleImage(webcamImage: WebcamImage): void {
-    console.log(
-      '📷 Image captured',
-      webcamImage.imageAsDataUrl.substring(0, 50) + '...'
-    );
+      // Vérifier d'abord les permissions actuelles
+      this.permissions = await this.surveillanceService.checkPermissions();
+      console.log('📋 Permissions actuelles:', this.permissions);
 
-    this.webcamImage = webcamImage;
-    this.captureHistory.unshift(webcamImage);
+      // Si la caméra n'est pas autorisée, la demander AUTOMATIQUEMENT
+      if (!this.permissions.camera) {
+        console.log("📲 Demande automatique d'accès à la caméra...");
+        const granted = await this.surveillanceService.requestPermissions();
 
-    // Limiter l'historique à 10 images
-    if (this.captureHistory.length > 10) {
-      this.captureHistory = this.captureHistory.slice(0, 10);
-    }
-
-    // Émettre l'événement
-    this.imageCapture.emit(webcamImage);
-
-    // Envoyer à la surveillance si en cours
-    if (this.isMonitoring && this.tentativeId) {
-      this.submitToSurveillance(webcamImage);
-    }
-  }
-
-  /**
-   * Observable pour déclencher les captures
-   */
-  get triggerObservable(): Observable<void> {
-    return this.trigger.asObservable();
-  }
-
-  /**
-   * Télécharge l'image capturée
-   */
-  downloadImage(type: 'jpg' | 'png' = 'jpg'): void {
-    if (!this.webcamImage) {
-      console.warn('⚠️ No image to download');
-      return;
-    }
-
-    const canvas = document.createElement('canvas');
-    const img = new Image();
-    img.src = this.webcamImage.imageAsDataUrl;
-
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-
-      if (!ctx) {
-        console.error('❌ Cannot get canvas context');
-        return;
+        if (granted) {
+          this.permissions = await this.surveillanceService.checkPermissions();
+          console.log('✅ Permissions accordées:', this.permissions);
+        } else {
+          console.error('❌ Permissions refusées - Test ne peut pas continuer');
+        }
       }
 
-      ctx.drawImage(img, 0, 0);
-      const mimeType = type === 'jpg' ? 'image/jpeg' : 'image/png';
-      const dataUrl = canvas.toDataURL(mimeType);
-
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `surveillance-${Date.now()}.${type}`;
-      link.click();
-
-      console.log('💾 Image downloaded');
-    };
+      // Émettre le statut des permissions
+      this.permissionsStatus.emit(this.permissions);
+    } catch (error) {
+      console.error('❌ Erreur lors de la gestion des permissions:', error);
+      this.permissions = { camera: false, screen: false };
+      this.permissionsStatus.emit(this.permissions);
+    }
   }
 
   /**
-   * Démarre la surveillance avec webcam
+   * Surveillance de l'état du test
    */
-  startSurveillance(): void {
+  private setupTestStateMonitoring(): void {
+    // Écouter les changements de l'état du test depuis le parent
+    // Le parent doit mettre à jour isTestActive quand le test commence/finit
+  }
+
+  /**
+   * Démarrage de la surveillance automatique
+   * AUCUN CONTRÔLE MANUEL - démarre automatiquement
+   */
+  private startAutomaticSurveillance(): void {
     if (!this.tentativeId) {
-      console.error('❌ Tentative ID required for surveillance');
+      console.error('❌ ID tentative manquant pour la surveillance');
       return;
     }
 
-    console.log('🔍 Starting webcam surveillance');
+    if (!this.permissions.camera) {
+      console.error('❌ Permissions caméra requises pour la surveillance');
+      return;
+    }
 
+    console.log('🔍 Démarrage de la surveillance automatique obligatoire');
+    console.log(`📊 Mode: ${this.testMode === 0 ? 'Training' : 'Recrutement'}`);
+    console.log(`⏱️ Intervalle de capture: ${this.captureInterval}s`);
+
+    // Démarrer la surveillance via le service
     const config = {
       webcamEnabled: true,
-      screenCaptureEnabled: false,
+      screenCaptureEnabled: true,
       focusMonitoringEnabled: true,
       captureInterval: this.captureInterval,
       tentativeId: this.tentativeId,
     };
 
     this.surveillanceService.startMonitoring(config);
+
+    // Démarrer les captures automatiques
+    this.startPeriodicCaptures();
+
+    // Première capture immédiate
+    setTimeout(() => {
+      this.triggerAutomaticCapture();
+    }, 2000);
   }
 
   /**
-   * Arrête la surveillance
+   * Captures périodiques automatiques
    */
-  stopSurveillance(): void {
-    console.log('🛑 Stopping webcam surveillance');
+  private startPeriodicCaptures(): void {
+    this.surveillanceInterval = setInterval(() => {
+      this.triggerAutomaticCapture();
+    }, this.captureInterval * 1000);
+  }
+
+  /**
+   * Déclenche une capture automatique
+   */
+  private triggerAutomaticCapture(): void {
+    if (!this.isTestActive || !this.permissions.camera) {
+      return;
+    }
+
+    console.log('📸 Capture automatique de surveillance');
+    this.trigger.next();
+  }
+
+  /**
+   * Arrêt de la surveillance (uniquement à la fin du test)
+   */
+  private stopAutomaticSurveillance(): void {
+    console.log('🛑 Arrêt de la surveillance automatique');
+
+    if (this.surveillanceInterval) {
+      clearInterval(this.surveillanceInterval);
+      this.surveillanceInterval = null;
+    }
+
     this.surveillanceService.stopMonitoring();
   }
 
   /**
-   * Capture d'écran en plus de la webcam
+   * Gestion des images capturées
    */
-  captureScreen(): void {
+  handleImage(webcamImage: WebcamImage): void {
+    console.log('📷 Image de surveillance capturée');
+
+    this.webcamImage = webcamImage;
+    this.addToHistory(webcamImage);
+
+    // Émettre l'événement
+    this.imageCapture.emit(webcamImage);
+
+    // Soumission automatique obligatoire à la surveillance
+    this.submitToSurveillance(webcamImage);
+  }
+
+  /**
+   * Ajout à l'historique avec limitation
+   */
+  private addToHistory(image: WebcamImage): void {
+    this.captureHistory.unshift(image);
+
+    // Limiter la taille de l'historique
+    if (this.captureHistory.length > this.MAX_HISTORY) {
+      this.captureHistory = this.captureHistory.slice(0, this.MAX_HISTORY);
+    }
+  }
+
+  /**
+   * Soumission obligatoire à la surveillance
+   */
+  private submitToSurveillance(image: WebcamImage): void {
     if (!this.tentativeId) {
-      console.error('❌ Tentative ID required for screen capture');
+      console.error('❌ Impossible de soumettre: ID tentative manquant');
       return;
     }
 
-    console.log('🖥️ Capturing screen');
+    console.log("📤 Soumission de l'image à la surveillance...");
 
-    this.surveillanceService.captureScreen(this.tentativeId).subscribe({
-      next: (response) => {
-        console.log('✅ Screen capture submitted');
-        this.surveillanceEvent.emit({ type: 'screen_capture', success: true });
-      },
-      error: (error) => {
-        console.error('❌ Screen capture failed:', error);
-        this.surveillanceEvent.emit({
-          type: 'screen_capture',
-          success: false,
-          error,
-        });
-      },
-    });
-  }
-
-  /**
-   * Vérification des permissions
-   */
-  private async checkPermissions(): Promise<void> {
-    try {
-      this.permissions = await this.surveillanceService.checkPermissions();
-      console.log('🔐 Permissions checked:', this.permissions);
-    } catch (error) {
-      console.error('❌ Error checking permissions:', error);
-    }
-  }
-
-  /**
-   * Demande les permissions
-   */
-  async requestPermissions(): Promise<void> {
-    try {
-      const granted = await this.surveillanceService.requestPermissions();
-      if (granted) {
-        await this.checkPermissions();
-        console.log('✅ Permissions granted');
-      } else {
-        console.warn('⚠️ Permissions denied');
-      }
-    } catch (error) {
-      console.error('❌ Error requesting permissions:', error);
-    }
-  }
-
-  /**
-   * Soumet l'image à la surveillance
-   */
-  private submitToSurveillance(image: WebcamImage): void {
     this.surveillanceService
       .captureWebcam(image.imageAsDataUrl, this.tentativeId)
       .subscribe({
         next: (response) => {
-          console.log('✅ Webcam image submitted to surveillance');
+          console.log('✅ Image soumise avec succès à la surveillance');
           this.surveillanceEvent.emit({
             type: 'webcam_capture',
             success: true,
+            timestamp: new Date(),
             imageId: response.id,
           });
         },
         error: (error) => {
-          console.error('❌ Failed to submit webcam image:', error);
+          console.error("❌ Échec de soumission de l'image:", error);
           this.surveillanceEvent.emit({
             type: 'webcam_capture',
             success: false,
-            error,
+            error: error.message,
+            timestamp: new Date(),
           });
         },
       });
   }
 
   /**
-   * Configuration de l'écoute des captures automatiques
+   * Capture d'écran automatique
    */
-  private setupAutomaticCaptureListener(): void {
-    window.addEventListener('automaticWebcamCapture', (event: any) => {
-      const { tentativeId } = event.detail;
-      if (tentativeId === this.tentativeId) {
-        console.log('🤖 Automatic webcam capture triggered');
-        this.triggerSnapshot();
-      }
+  automaticScreenCapture(): void {
+    if (!this.tentativeId || !this.isTestActive) {
+      return;
+    }
+
+    console.log("🖥️ Capture d'écran automatique");
+
+    this.surveillanceService.captureScreen(this.tentativeId).subscribe({
+      next: (response) => {
+        console.log("✅ Capture d'écran soumise");
+        this.surveillanceEvent.emit({
+          type: 'screen_capture',
+          success: true,
+          timestamp: new Date(),
+        });
+      },
+      error: (error) => {
+        console.error("❌ Échec capture d'écran:", error);
+        this.surveillanceEvent.emit({
+          type: 'screen_capture',
+          success: false,
+          error: error.message,
+          timestamp: new Date(),
+        });
+      },
     });
   }
 
   /**
-   * Démarrage de la capture automatique
+   * Observable pour les déclencheurs de capture
    */
-  private startAutomaticCapture(): void {
-    console.log('⏰ Starting automatic capture');
-    this.startSurveillance();
+  get triggerObservable(): Observable<void> {
+    return this.trigger.asObservable();
   }
 
   /**
-   * Arrêt de la capture automatique
-   */
-  private stopAutomaticCapture(): void {
-    console.log('⏹️ Stopping automatic capture');
-    this.stopSurveillance();
-  }
-
-  /**
-   * Basculer l'affichage de la webcam
-   */
-  toggleWebcam(): void {
-    this.showWebcam = !this.showWebcam;
-    console.log('👁️ Webcam display toggled:', this.showWebcam);
-  }
-
-  /**
-   * Effacer l'historique des captures
-   */
-  clearHistory(): void {
-    this.captureHistory = [];
-    this.webcamImage = null;
-    console.log('🗑️ Capture history cleared');
-  }
-
-  /**
-   * Obtenir le statut de la surveillance
+   * Statut de la surveillance (toujours active)
    */
   getSurveillanceStatus(): string {
-    if (!this.isMonitoring) return 'Inactive';
-    if (!this.permissions.camera) return 'Permissions manquantes';
-    return 'Active';
+    if (!this.permissions.camera) return 'Permissions requises';
+    if (!this.isTestActive) return 'En attente du test';
+    return 'Surveillance active';
   }
 
   /**
-   * Vérifier si les permissions sont accordées
+   * Vérification des permissions
    */
   get hasPermissions(): boolean {
     return this.permissions.camera;
   }
 
   /**
-   * Obtenir le nombre d'images capturées
+   * Nombre d'images dans l'historique
    */
   get captureCount(): number {
     return this.captureHistory.length;
+  }
+
+  /**
+   * Méthodes publiques pour l'interaction avec le parent
+   */
+
+  // Appelée quand le test commence
+  onTestStart(): void {
+    console.log('🚀 Test démarré - Activation de la surveillance');
+    this.startAutomaticSurveillance();
+  }
+
+  // Appelée quand le test se termine
+  onTestEnd(): void {
+    console.log('🏁 Test terminé - Arrêt de la surveillance');
+    this.stopAutomaticSurveillance();
+  }
+
+  // Mise à jour de l'état du test depuis le parent
+  updateTestState(isActive: boolean): void {
+    this.isTestActive = isActive;
+
+    if (isActive && this.tentativeId && this.permissions.camera) {
+      this.startAutomaticSurveillance();
+    } else if (!isActive) {
+      this.stopAutomaticSurveillance();
+    }
+  }
+
+  /**
+   * Méthodes d'information pour le template
+   */
+  getTestModeLabel(): string {
+    return this.testMode === 0 ? 'Training' : 'Recrutement';
+  }
+
+  isSurveillanceRequired(): boolean {
+    // Surveillance obligatoire pour les deux modes
+    return true;
+  }
+
+  getSurveillanceInfo(): string {
+    if (!this.permissions.camera) {
+      return 'Permissions caméra requises pour continuer';
+    }
+    if (!this.isTestActive) {
+      return 'Surveillance prête - En attente du démarrage du test';
+    }
+    return `Surveillance active - Capture toutes les ${this.captureInterval}s`;
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString();
   }
 }

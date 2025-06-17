@@ -1,4 +1,4 @@
-// src/app/shared/components/test-taking/test-taking.component.scss
+// src/app/shared/components/test-taking/test-taking.component.scss - Styles surveillance obligatoire
 
 .test-taking-container {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -131,7 +131,7 @@
 
 /* Test instructions */
 .test-instructions {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 40px auto;
   padding: 0 20px;
   z-index: 1;
@@ -157,7 +157,7 @@
 
     .test-meta {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 20px;
       margin-bottom: 30px;
 
@@ -171,6 +171,43 @@
 
         &:hover {
           transform: translateY(-5px);
+        }
+
+        &.surveillance-mandatory {
+          background: linear-gradient(135deg, #ff634730, #ff006e30);
+          border-color: #ff006e;
+
+          .surveillance-status {
+            &.status-active {
+              color: #28a745;
+              background: rgba(40, 167, 69, 0.1);
+              padding: 4px 12px;
+              border-radius: 20px;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            }
+
+            &.status-warning {
+              color: #ffc107;
+              background: rgba(255, 193, 7, 0.1);
+              padding: 4px 12px;
+              border-radius: 20px;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            }
+
+            &.status-error {
+              color: #dc3545;
+              background: rgba(220, 53, 69, 0.1);
+              padding: 4px 12px;
+              border-radius: 20px;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            }
+          }
         }
 
         .meta-label {
@@ -220,6 +257,36 @@
           border-left: 4px solid #667eea;
           position: relative;
 
+          &.surveillance-instruction.mandatory {
+            background: linear-gradient(135deg, #ff634710, #ff006e10);
+            border-left-color: #ff006e;
+            border-width: 4px;
+
+            strong {
+              color: #ff006e;
+            }
+          }
+
+          &.surveillance-rule {
+            background: linear-gradient(135deg, #ffc10710, #ff834710);
+            border-left-color: #ffc107;
+
+            strong {
+              color: #ff8347;
+            }
+          }
+
+          &.final-rule {
+            background: linear-gradient(135deg, #dc354510, #6f1d2010);
+            border-left-color: #dc3545;
+            border-width: 6px;
+
+            strong {
+              color: #dc3545;
+              font-size: 18px;
+            }
+          }
+
           &::before {
             content: "✓";
             position: absolute;
@@ -238,8 +305,158 @@
             font-weight: bold;
           }
 
+          &.surveillance-instruction.mandatory::before {
+            background: #ff006e;
+            content: "🔒";
+          }
+
+          &.surveillance-rule::before {
+            background: #ffc107;
+            content: "⚠️";
+          }
+
+          &.final-rule::before {
+            background: #dc3545;
+            content: "🚫";
+          }
+
           &:last-child {
             margin-bottom: 0;
+          }
+        }
+      }
+    }
+
+    // ✅ Notice de surveillance obligatoire
+    .surveillance-notice.mandatory-notice {
+      margin: 30px 0;
+      background: linear-gradient(135deg, #ff634720, #ff006e20);
+      border: 3px solid #ff006e;
+      border-radius: 15px;
+      padding: 25px;
+
+      .notice-card {
+        .notice-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 15px;
+
+          i {
+            font-size: 24px;
+            color: #ff006e;
+          }
+
+          h4 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ff006e;
+            margin: 0;
+          }
+        }
+
+        .notice-content {
+          p {
+            margin: 0 0 12px 0;
+            color: #6d1e47;
+            font-weight: 500;
+
+            strong {
+              color: #ff006e;
+            }
+          }
+
+          ul {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+
+            li {
+              padding: 8px 0;
+              color: #6d1e47;
+              font-weight: 500;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+          }
+
+          .warning-box {
+            background: rgba(220, 53, 69, 0.1);
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            i {
+              color: #dc3545;
+              font-size: 18px;
+            }
+
+            span {
+              color: #dc3545;
+              font-weight: 600;
+            }
+          }
+        }
+      }
+    }
+
+    // ✅ Erreur de permissions
+    .permissions-error {
+      margin: 30px 0;
+      background: linear-gradient(135deg, #dc354520, #6f1d2020);
+      border: 3px solid #dc3545;
+      border-radius: 15px;
+      padding: 25px;
+
+      .error-card {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+
+        i {
+          font-size: 32px;
+          color: #dc3545;
+          margin-top: 4px;
+        }
+
+        .error-content {
+          flex: 1;
+
+          h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #dc3545;
+            margin: 0 0 10px 0;
+          }
+
+          p {
+            color: #6f1d20;
+            margin: 0 0 15px 0;
+          }
+
+          .btn-permission {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            }
           }
         }
       }
@@ -262,13 +479,32 @@
         text-transform: uppercase;
         letter-spacing: 1px;
 
-        &:hover {
+        &:hover:not(:disabled) {
           transform: translateY(-3px);
           box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
         }
 
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          background: linear-gradient(45deg, #6c757d, #5a6268);
+        }
+
         &:active {
           transform: translateY(-1px);
+        }
+      }
+
+      .start-info {
+        margin-top: 10px;
+
+        .text-warning {
+          color: #ffc107;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
         }
       }
     }
@@ -352,6 +588,60 @@
         }
         100% {
           transform: translateX(100%);
+        }
+      }
+    }
+
+    // ✅ Header de surveillance obligatoire
+    .surveillance-header.mandatory-monitoring {
+      .surveillance-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: relative;
+
+        &.status-active {
+          background: linear-gradient(135deg, #28a745, #20c997);
+          color: white;
+          box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        }
+
+        &.status-warning {
+          background: linear-gradient(135deg, #ffc107, #fd7e14);
+          color: #212529;
+          box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+        }
+
+        &.status-error {
+          background: linear-gradient(135deg, #dc3545, #e83e8c);
+          color: white;
+          box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+        }
+
+        .monitoring-dot {
+          width: 8px;
+          height: 8px;
+          background: currentColor;
+          border-radius: 50%;
+          animation: pulse 1.5s infinite;
+        }
+
+        .activity-counter {
+          background: rgba(220, 53, 69, 0.9);
+          color: white;
+          border-radius: 15px;
+          padding: 2px 8px;
+          font-size: 10px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-left: 8px;
         }
       }
     }
@@ -530,7 +820,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
 
-            &:hover {
+            &:hover:not(:disabled) {
               background: rgba(102, 126, 234, 0.2);
               transform: translateY(-2px);
             }
@@ -564,6 +854,133 @@
         }
       }
     }
+
+    // ✅ Panneau de surveillance obligatoire
+    .surveillance-panel.mandatory-panel {
+      width: 350px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+        h4 {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+          margin: 0;
+
+          i {
+            color: #667eea;
+          }
+        }
+
+        .status-badge.active {
+          background: linear-gradient(135deg, #28a745, #20c997);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 15px;
+          font-size: 11px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          text-transform: uppercase;
+
+          i {
+            font-size: 6px;
+            animation: pulse 1.5s infinite;
+          }
+        }
+      }
+
+      .surveillance-stats {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+        .stat-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .stat-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+          }
+
+          .stat-value {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+
+            &.active {
+              background: rgba(40, 167, 69, 0.1);
+              color: #28a745;
+            }
+
+            &.warning {
+              background: rgba(255, 193, 7, 0.1);
+              color: #ffc107;
+            }
+          }
+        }
+      }
+
+      .surveillance-rules {
+        padding: 20px;
+
+        h5 {
+          font-size: 14px;
+          font-weight: 600;
+          color: #333;
+          margin: 0 0 12px 0;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            font-size: 12px;
+            color: #666;
+            padding: 4px 0;
+            position: relative;
+            padding-left: 12px;
+
+            &::before {
+              content: "•";
+              position: absolute;
+              left: 0;
+              color: #667eea;
+              font-weight: bold;
+            }
+          }
+        }
+      }
+    }
   }
 
   .test-footer {
@@ -576,10 +993,37 @@
     box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
     border-top: 1px solid rgba(255, 255, 255, 0.2);
 
-    .completion-info {
-      font-size: 16px;
-      color: #666;
-      font-weight: 500;
+    .footer-info {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+
+      .completion-info {
+        font-size: 16px;
+        color: #666;
+        font-weight: 500;
+      }
+
+      // ✅ Informations de surveillance obligatoire
+      .surveillance-info.mandatory {
+        display: flex;
+        gap: 15px;
+
+        .info-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: #666;
+          background: rgba(102, 126, 234, 0.1);
+          padding: 4px 8px;
+          border-radius: 12px;
+
+          i {
+            color: #667eea;
+          }
+        }
+      }
     }
 
     .btn-submit-test {
@@ -595,6 +1039,9 @@
       box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
 
       &:hover {
         transform: translateY(-2px);
@@ -604,23 +1051,268 @@
   }
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .test-interface .test-content .question-nav {
-    width: 80px;
+// ✅ Overlays de surveillance critiques
+.suspicious-activity-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 
-    .question-nav-items .nav-item {
-      width: 35px;
-      height: 35px;
-      font-size: 14px;
+  .warning-modal.critical {
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+
+    .warning-header {
+      text-align: center;
+      margin-bottom: 20px;
+
+      i {
+        font-size: 48px;
+        color: #ff6b6b;
+        margin-bottom: 10px;
+        animation: pulse 2s infinite;
+      }
+
+      h3 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #dc3545;
+        margin: 0;
+      }
+    }
+
+    .warning-body {
+      .violation-rules {
+        margin: 20px 0;
+
+        h4 {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+          margin: 15px 0 10px 0;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 15px 0;
+
+          li {
+            padding: 6px 0;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+        }
+      }
+
+      .critical-warning {
+        background: linear-gradient(135deg, #dc354520, #6f1d2020);
+        border: 2px solid #dc3545;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        i {
+          font-size: 24px;
+          color: #dc3545;
+        }
+
+        p {
+          margin: 0;
+          color: #dc3545;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .warning-actions {
+      text-align: center;
+      margin-top: 25px;
+
+      .btn-warning-acknowledge {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+      }
     }
   }
+}
 
-  .test-interface .test-content .question-area {
-    padding: 15px;
+.surveillance-failure-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 
-    .question-container {
-      padding: 25px;
+  .failure-modal {
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+    .failure-header {
+      text-align: center;
+      margin-bottom: 20px;
+
+      i {
+        font-size: 48px;
+        color: #dc3545;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #dc3545;
+        margin: 0;
+      }
+    }
+
+    .failure-body {
+      p {
+        color: #555;
+        line-height: 1.6;
+        margin: 0 0 15px 0;
+      }
+
+      .troubleshooting {
+        margin: 20px 0;
+
+        h4 {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+          margin: 0 0 10px 0;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            padding: 6px 0;
+            color: #666;
+            position: relative;
+            padding-left: 20px;
+
+            &::before {
+              content: "•";
+              position: absolute;
+              left: 0;
+              color: #667eea;
+              font-weight: bold;
+            }
+          }
+        }
+      }
+    }
+
+    .failure-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 25px;
+
+      .btn-reload,
+      .btn-support {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-reload {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+      }
+
+      .btn-support {
+        background: linear-gradient(45deg, #6c757d, #5a6268);
+        color: white;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+      }
+    }
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .test-interface .test-content {
+    .question-nav {
+      width: 80px;
+
+      .question-nav-items .nav-item {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+      }
+    }
+
+    .question-area {
+      padding: 15px;
+
+      .question-container {
+        padding: 25px;
+      }
+    }
+
+    .surveillance-panel.mandatory-panel {
+      width: 300px;
     }
   }
 

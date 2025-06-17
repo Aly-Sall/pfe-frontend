@@ -1,4 +1,4 @@
-// src/app/shared/components/test-taking/test-taking.component.ts - Version avec surveillance
+// src/app/shared/components/test-taking/test-taking.component.ts - Version corrigée avec surveillance obligatoire
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -30,6 +30,7 @@ export class TestTakingComponent implements OnInit, OnDestroy {
   isCompleted: boolean = false;
   hasError: boolean = false;
   errorMessage: string = '';
+  error: string | null = null; // ✅ Ajouté pour les erreurs de permissions
 
   // Timer properties
   remainingTime: number = 0;
@@ -38,11 +39,15 @@ export class TestTakingComponent implements OnInit, OnDestroy {
   // Progress tracking
   answeredQuestions: Set<number> = new Set();
 
-  // Surveillance properties
-  surveillanceEnabled: boolean = false;
+  // ✅ Propriétés de surveillance OBLIGATOIRE
+  readonly surveillanceEnabled: boolean = true; // Toujours activée
+  readonly isSurveillanceActive: boolean = true; // Contrôle l'état de surveillance
   currentTentativeId: number | null = null;
   suspiciousActivityCount: number = 0;
   surveillancePermissions = { camera: false, screen: false };
+
+  // ✅ Accès à l'objet window
+  window = window;
 
   // Subscriptions
   private subscriptions: Subscription[] = [];
@@ -67,13 +72,14 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     // Stop the timer if active
     this.attemptService.stopTimer();
 
-    // Stop surveillance
+    // Stop surveillance (sera automatique à la fin du test)
     this.stopSurveillance();
   }
 
   loadTest(): void {
     this.isLoading = true;
     this.hasError = false;
+    this.error = null;
 
     // Get test ID from route parameter
     const testId = this.route.snapshot.paramMap.get('id');
@@ -87,8 +93,11 @@ export class TestTakingComponent implements OnInit, OnDestroy {
       next: (test) => {
         this.test = test;
 
-        // Vérifier si la surveillance est requise (mode recrutement)
-        this.surveillanceEnabled = test.mode === 1; // 1 = Recruitment
+        // ✅ Surveillance OBLIGATOIRE pour tous les modes
+        console.log(
+          '🔒 Surveillance obligatoire activée pour le test:',
+          test.title
+        );
 
         // Load questions for the test
         this.testService.getTestQuestions(Number(testId)).subscribe({
@@ -108,10 +117,8 @@ export class TestTakingComponent implements OnInit, OnDestroy {
               this.showRestorePrompt();
             }
 
-            // Vérifier les permissions de surveillance si nécessaire
-            if (this.surveillanceEnabled) {
-              this.checkSurveillancePermissions();
-            }
+            // ✅ Vérifier les permissions de surveillance (OBLIGATOIRE)
+            this.checkSurveillancePermissions();
 
             this.isLoading = false;
           },
@@ -124,6 +131,57 @@ export class TestTakingComponent implements OnInit, OnDestroy {
         this.handleError('Failed to load test details');
       },
     });
+  }
+
+  // ✅ Vérification OBLIGATOIRE des permissions de surveillance
+  private async checkSurveillancePermissions(): Promise<void> {
+    try {
+      this.surveillancePermissions =
+        await this.surveillanceService.checkPermissions();
+      console.log(
+        '📋 Permissions de surveillance:',
+        this.surveillancePermissions
+      );
+
+      if (!this.surveillancePermissions.camera) {
+        this.error =
+          'Camera access is required for all tests. Surveillance is mandatory and cannot be disabled.';
+        console.warn('⚠️ Permissions caméra manquantes - Test bloqué');
+      } else {
+        this.error = null;
+        console.log('✅ Permissions accordées - Test peut commencer');
+      }
+    } catch (error) {
+      console.error(
+        '❌ Erreur lors de la vérification des permissions:',
+        error
+      );
+      this.error =
+        'Failed to check camera permissions. Please refresh and try again.';
+    }
+  }
+
+  // ✅ Demande AUTOMATIQUE des permissions
+  public async requestSurveillancePermissions(): Promise<boolean> {
+    try {
+      console.log('📲 Demande de permissions de surveillance...');
+      const granted = await this.surveillanceService.requestPermissions();
+
+      if (granted) {
+        await this.checkSurveillancePermissions();
+        console.log('✅ Permissions accordées');
+      } else {
+        this.error =
+          'Camera permissions denied. This test cannot proceed without surveillance.';
+        console.error('❌ Permissions refusées');
+      }
+
+      return granted;
+    } catch (error) {
+      console.error('❌ Erreur lors de la demande de permissions:', error);
+      this.error = 'Error requesting camera permissions. Please try again.';
+      return false;
+    }
   }
 
   startTest(): void {
@@ -154,10 +212,9 @@ export class TestTakingComponent implements OnInit, OnDestroy {
           this.subscriptions.push(timerSub);
         }
 
-        // Démarrer la surveillance si activée et permissions accordées
-        if (this.surveillanceEnabled && this.currentTentativeId) {
-          this.startSurveillance();
-        }
+        // ✅ Démarrer la surveillance OBLIGATOIRE
+        console.log('🔍 Démarrage de la surveillance obligatoire');
+        this.startSurveillance();
       },
       error: (error) => {
         this.handleError('Failed to start the test');
@@ -200,7 +257,7 @@ export class TestTakingComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
 
-    // Arrêter la surveillance avant de soumettre
+    // ✅ Arrêter la surveillance AUTOMATIQUEMENT
     this.stopSurveillance();
 
     this.attemptService.completeTest().subscribe({
@@ -216,45 +273,33 @@ export class TestTakingComponent implements OnInit, OnDestroy {
   }
 
   // ===============================
-  // MÉTHODES DE SURVEILLANCE
+  // ✅ MÉTHODES DE SURVEILLANCE OBLIGATOIRE
   // ===============================
-
-  private async checkSurveillancePermissions(): Promise<void> {
-    try {
-      this.surveillancePermissions =
-        await this.surveillanceService.checkPermissions();
-      console.log('📋 Surveillance permissions:', this.surveillancePermissions);
-    } catch (error) {
-      console.error('❌ Error checking surveillance permissions:', error);
-    }
-  }
-
-  public async requestSurveillancePermissions(): Promise<boolean> {
-    try {
-      const granted = await this.surveillanceService.requestPermissions();
-      if (granted) {
-        await this.checkSurveillancePermissions();
-      }
-      return granted;
-    } catch (error) {
-      console.error('❌ Error requesting surveillance permissions:', error);
-      return false;
-    }
-  }
 
   private startSurveillance(): void {
     if (!this.currentTentativeId) {
-      console.warn('⚠️ Cannot start surveillance: no tentative ID');
+      console.warn(
+        "⚠️ Impossible de démarrer la surveillance: pas d'ID tentative"
+      );
       return;
     }
 
-    console.log('🔍 Starting test surveillance');
+    if (!this.surveillancePermissions.camera) {
+      console.error(
+        '❌ Impossible de démarrer la surveillance: permissions caméra manquantes'
+      );
+      this.error =
+        'Camera permissions required. Cannot start test without surveillance.';
+      return;
+    }
+
+    console.log('🔍 Démarrage de la surveillance obligatoire');
 
     const config = {
       webcamEnabled: true,
       screenCaptureEnabled: true,
       focusMonitoringEnabled: true,
-      captureInterval: 60, // Capture toutes les 60 secondes
+      captureInterval: 45, // 45 secondes
       tentativeId: this.currentTentativeId,
     };
 
@@ -262,7 +307,7 @@ export class TestTakingComponent implements OnInit, OnDestroy {
   }
 
   private stopSurveillance(): void {
-    console.log('🛑 Stopping test surveillance');
+    console.log('🛑 Arrêt de la surveillance');
     this.surveillanceService.stopMonitoring();
   }
 
@@ -275,6 +320,11 @@ export class TestTakingComponent implements OnInit, OnDestroy {
         // Alerter si trop d'activités suspectes
         if (count >= 3) {
           this.showSuspiciousActivityWarning();
+        }
+
+        // Terminer le test automatiquement si trop de violations
+        if (count >= 10) {
+          this.terminateTestForViolations();
         }
       });
 
@@ -291,6 +341,7 @@ export class TestTakingComponent implements OnInit, OnDestroy {
       - Ne quittez pas la fenêtre du test
       - Ne consultez pas d'autres sites web
       - Restez face à la caméra
+      - N'utilisez pas d'aides externes
       
       Continuez à respecter les consignes pour éviter l'invalidation de votre test.
     `;
@@ -298,12 +349,58 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     alert(message);
   }
 
-  // Méthodes pour le composant webcam
+  // ✅ Terminaison automatique du test en cas de violations multiples
+  private terminateTestForViolations(): void {
+    alert(`
+      🚨 TEST TERMINATED 🚨
+      
+      Your test has been automatically terminated due to multiple violations (${this.suspiciousActivityCount}).
+      
+      This action has been logged and reported.
+    `);
+
+    // Arrêter la surveillance et retourner au dashboard
+    this.stopSurveillance();
+    this.router.navigate(['/dashboard']);
+  }
+
+  // ✅ Gestion des événements de surveillance
   onSurveillanceEvent(event: any): void {
-    console.log('📊 Surveillance event:', event);
+    console.log('📊 Événement de surveillance:', event);
 
     if (!event.success) {
-      console.warn('⚠️ Surveillance event failed:', event.error);
+      console.warn("⚠️ Échec d'événement de surveillance:", event.error);
+
+      // Incrémenter le compteur d'activités suspectes
+      this.suspiciousActivityCount++;
+    }
+
+    // Traitement spécifique par type d'événement
+    switch (event.type) {
+      case 'webcam_capture':
+        if (event.success) {
+          console.log('✅ Capture webcam réussie');
+        } else {
+          console.error('❌ Échec capture webcam:', event.error);
+        }
+        break;
+
+      case 'screen_capture':
+        if (event.success) {
+          console.log("✅ Capture d'écran réussie");
+        } else {
+          console.error("❌ Échec capture d'écran:", event.error);
+        }
+        break;
+
+      case 'focus_lost':
+        console.warn('⚠️ Focus perdu - Activité suspecte');
+        this.suspiciousActivityCount++;
+        break;
+
+      case 'suspicious_activity':
+        console.warn('⚠️ Activité suspecte détectée:', event.data);
+        break;
     }
   }
 
@@ -313,6 +410,29 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     return Math.round(
       (this.answeredQuestions.size / this.questions.length) * 100
     );
+  }
+
+  // ✅ Propriétés calculées pour le template
+  get canStartTest(): boolean {
+    return this.surveillancePermissions.camera;
+  }
+
+  get surveillanceStatus(): string {
+    if (!this.surveillancePermissions.camera) return 'Permissions Required';
+    if (!this.isStarted) return 'Ready to Monitor';
+    return 'Actively Monitoring';
+  }
+
+  get surveillanceStatusClass(): string {
+    if (!this.surveillancePermissions.camera) return 'status-error';
+    if (!this.isStarted) return 'status-warning';
+    return 'status-active';
+  }
+
+  get surveillanceIconClass(): string {
+    if (!this.surveillancePermissions.camera) return 'fa-camera-slash';
+    if (!this.isStarted) return 'fa-clock';
+    return 'fa-shield-alt';
   }
 
   private showRestorePrompt(): void {
@@ -340,42 +460,24 @@ export class TestTakingComponent implements OnInit, OnDestroy {
   private handleError(message: string): void {
     this.hasError = true;
     this.errorMessage = message;
+    this.error = message;
     this.isLoading = false;
   }
 
-  // Getters pour le template
-  get shouldShowSurveillanceWarning(): boolean {
-    return (
-      this.surveillanceEnabled &&
-      !this.surveillancePermissions.camera &&
-      this.isStarted
-    );
-  }
-
-  get surveillanceStatus(): string {
-    if (!this.surveillanceEnabled) return 'Désactivée';
-    if (!this.surveillancePermissions.camera) return 'Permissions requises';
-    if (this.isStarted) return 'Active';
-    return 'En attente';
-  }
-
-  get canStartTest(): boolean {
-    if (!this.surveillanceEnabled) return true;
-    return this.surveillancePermissions.camera;
-  }
-
-  // Méthode pour demander les permissions avant de démarrer
+  // ✅ Méthode pour préparer et démarrer le test avec surveillance
   async prepareAndStartTest(): Promise<void> {
-    if (this.surveillanceEnabled && !this.surveillancePermissions.camera) {
+    // Vérifier les permissions avant de démarrer
+    if (!this.surveillancePermissions.camera) {
       const granted = await this.requestSurveillancePermissions();
       if (!granted) {
         alert(
-          'Les permissions de surveillance sont requises pour ce test de recrutement.'
+          'Camera permissions are mandatory for all tests. Test cannot proceed without surveillance.'
         );
         return;
       }
     }
 
+    // Démarrer le test une fois les permissions accordées
     this.startTest();
   }
 }

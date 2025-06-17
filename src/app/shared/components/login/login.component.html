@@ -1,10 +1,48 @@
+<!-- src/app/shared/components/login/login.component.html - Version mise à jour -->
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
       <h2>Connexion</h2>
-      <p>Connectez-vous à votre compte</p>
+      <p>Choisissez votre type de compte</p>
     </div>
 
+    <!-- Sélection du rôle -->
+    <div class="role-selector">
+      <div class="role-tabs">
+        <button
+          type="button"
+          class="role-tab"
+          [class.active]="selectedRole === UserRole.Administrator"
+          (click)="onRoleChange(UserRole.Administrator)"
+        >
+          <i class="fas fa-user-shield"></i>
+          Administrateur
+        </button>
+        <button
+          type="button"
+          class="role-tab"
+          [class.active]="selectedRole === UserRole.Candidate"
+          (click)="onRoleChange(UserRole.Candidate)"
+        >
+          <i class="fas fa-user"></i>
+          Candidat
+        </button>
+      </div>
+    </div>
+
+    <!-- Message de succès -->
+    <div *ngIf="successMessage" class="alert alert-success">
+      <i class="fas fa-check-circle"></i>
+      {{ successMessage }}
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="error" class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+    </div>
+
+    <!-- Formulaire de connexion -->
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label for="email">Email</label>
@@ -39,7 +77,21 @@
         </div>
       </div>
 
-      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+      <!-- Informations spécifiques selon le rôle -->
+      <div class="role-info">
+        <div *ngIf="selectedRole === UserRole.Administrator" class="admin-info">
+          <p>
+            <i class="fas fa-info-circle"></i> Accès complet au système de
+            gestion
+          </p>
+        </div>
+        <div *ngIf="selectedRole === UserRole.Candidate" class="candidate-info">
+          <p>
+            <i class="fas fa-info-circle"></i> Vous recevrez un email avec vos
+            tests disponibles
+          </p>
+        </div>
+      </div>
 
       <button
         type="submit"
@@ -51,8 +103,27 @@
           class="spinner-border spinner-border-sm"
           role="status"
         ></span>
-        Se connecter
+        <span *ngIf="selectedRole === UserRole.Administrator"
+          >Se connecter</span
+        >
+        <span *ngIf="selectedRole === UserRole.Candidate"
+          >Recevoir l'invitation</span
+        >
       </button>
     </form>
+
+    <!-- Instructions supplémentaires pour les candidats -->
+    <div
+      *ngIf="selectedRole === UserRole.Candidate"
+      class="candidate-instructions"
+    >
+      <h4>Instructions pour les candidats :</h4>
+      <ol>
+        <li>Entrez vos identifiants de candidat</li>
+        <li>Cliquez sur "Recevoir l'invitation"</li>
+        <li>Vérifiez votre email pour le lien d'accès aux tests</li>
+        <li>Cliquez sur le lien pour accéder directement à vos tests</li>
+      </ol>
+    </div>
   </div>
 </div>
