@@ -1,142 +1,301 @@
 <!-- candidates.component.html -->
 <div class="candidates-container">
-  <!-- En-tête avec titre et bouton d'ajout -->
-  <div class="header">
-    <h1>Candidats</h1>
-    <div class="actions">
-      <div class="search-container">
-        <input
-          type="text"
-          placeholder="Rechercher un candidat..."
-          class="search-input"
-        />
-        <i class="search-icon">🔍</i>
+  <!-- En-tête -->
+  <div class="candidates-header">
+    <h1>
+      <i class="fas fa-users"></i>
+      Gestion des candidats
+    </h1>
+    <p>Gérez vos candidats et suivez leurs résultats</p>
+
+    <!-- Statistiques -->
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ totalCandidates }}</div>
+          <div class="stat-label">Total candidats</div>
+        </div>
       </div>
-      <button class="btn-primary" routerLink="/candidates/new">
-        <i class="add-icon">+</i>
-        Ajouter un candidat
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ activeCandidates }}</div>
+          <div class="stat-label">Candidats actifs</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-number">{{ successRate }}%</div>
+          <div class="stat-label">Taux de réussite</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre d'actions -->
+  <div class="actions-bar">
+    <div class="search-section">
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="search()"
+        placeholder="Rechercher un candidat..."
+        class="search-input"
+      />
+      <button (click)="search()" class="search-btn">
+        <i class="fas fa-search"></i>
+        Rechercher
+      </button>
+      <button *ngIf="searchQuery" (click)="clearSearch()" class="clear-btn">
+        <i class="fas fa-times"></i>
       </button>
     </div>
+
+    <button routerLink="/candidates/new" class="add-btn">
+      <i class="fas fa-plus"></i>
+      Nouveau candidat
+    </button>
   </div>
 
-  <!-- Statistiques des candidats -->
-  <div class="stats-cards">
-    <div class="stat-card">
-      <div class="stat-value">{{ totalCandidates }}</div>
-      <div class="stat-label">Total Candidats</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{ activeCandidates }}</div>
-      <div class="stat-label">Candidats actifs</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{ successRate }}%</div>
-      <div class="stat-label">Taux de réussite</div>
-    </div>
-  </div>
-
-  <!-- Message d'erreur -->
+  <!-- Messages -->
   <div *ngIf="error" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i>
     {{ error }}
   </div>
 
-  <!-- Chargement -->
   <div *ngIf="loading" class="loading-container">
-    <div class="loading-spinner"></div>
-    <p>Chargement des données...</p>
-  </div>
-
-  <!-- Tableau des candidats -->
-  <div *ngIf="!loading && !error" class="table-container">
-    <table class="candidates-table">
-      <thead>
-        <tr>
-          <th>Nom</th>
-          <th>Email</th>
-          <th>Date d'inscription</th>
-          <th>Tests passés</th>
-          <th>Score moyen</th>
-          <th>Statut</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let candidate of candidates">
-          <td>{{ candidate.nom }}</td>
-          <td>{{ candidate.email }}</td>
-          <td>{{ candidate.date | date : "dd/MM/yyyy" }}</td>
-          <td>{{ candidate.testsCount }}</td>
-          <td>
-            <div
-              class="score-badge"
-              [ngClass]="getScoreClass(candidate.scoreObtenu ?? 0)"
-            >
-              {{ candidate.scoreObtenu }}%
-            </div>
-          </td>
-          <td>
-            <span class="status-badge" [ngClass]="candidate.status">
-              {{ candidate.status }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <button
-              class="btn-icon"
-              (click)="viewResults(candidate.id)"
-              title="Voir les résultats"
-            >
-              <i class="view-icon">👁️</i>
-            </button>
-            <button
-              class="btn-icon"
-              (click)="editCandidate(candidate.id)"
-              title="Modifier"
-            >
-              <i class="edit-icon">✏️</i>
-            </button>
-            <button
-              class="btn-icon"
-              (click)="deleteCandidate(candidate.id)"
-              title="Supprimer"
-            >
-              <i class="delete-icon">🗑️</i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Message si aucun candidat -->
-    <div *ngIf="candidates.length === 0" class="no-data">
-      Aucun candidat trouvé
+    <div class="loading-spinner">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Chargement des candidats...</p>
     </div>
   </div>
 
-  <!-- Pagination -->
-  <div *ngIf="!loading && !error && candidates.length > 0" class="pagination">
-    <button
-      class="btn-page"
-      [disabled]="currentPage === 1"
-      (click)="loadCandidates(currentPage - 1)"
-    >
-      <i class="prev-icon">←</i>
-    </button>
-    <div class="page-numbers">
-      <span
-        class="page"
-        *ngFor="let page of pages"
-        [ngClass]="{ current: page === currentPage }"
-        (click)="loadCandidates(page)"
+  <!-- Contenu principal -->
+  <div *ngIf="!loading" class="candidates-content">
+    <!-- Aucun candidat -->
+    <div *ngIf="candidates.length === 0" class="no-candidates">
+      <div class="no-candidates-icon">
+        <i class="fas fa-user-slash"></i>
+      </div>
+      <h3>{{ searchQuery ? "Aucun candidat trouvé" : "Aucun candidat" }}</h3>
+      <p *ngIf="searchQuery">
+        Aucun candidat ne correspond à votre recherche "{{ searchQuery }}".
+      </p>
+      <p *ngIf="!searchQuery">
+        Vous n'avez pas encore de candidats. Commencez par en ajouter un.
+      </p>
+      <button
+        *ngIf="!searchQuery"
+        routerLink="/candidates/new"
+        class="btn btn-primary"
       >
-        {{ page }}
-      </span>
+        <i class="fas fa-plus"></i>
+        Ajouter le premier candidat
+      </button>
+      <button
+        *ngIf="searchQuery"
+        (click)="clearSearch()"
+        class="btn btn-secondary"
+      >
+        Retour à la liste
+      </button>
     </div>
-    <button
-      class="btn-page"
-      [disabled]="currentPage === totalPages"
-      (click)="loadCandidates(currentPage + 1)"
-    >
-      <i class="next-icon">→</i>
-    </button>
+
+    <!-- Table des candidats -->
+    <div *ngIf="candidates.length > 0" class="candidates-table-container">
+      <div class="table-header">
+        <h2>Liste des candidats ({{ totalItems }} candidats)</h2>
+      </div>
+
+      <div class="table-responsive">
+        <table class="candidates-table">
+          <thead>
+            <tr>
+              <th>Candidat</th>
+              <th>Email</th>
+              <th>Date d'inscription</th>
+              <th>Statut</th>
+              <th>Score moyen</th>
+              <th>Tests passés</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let candidate of candidates">
+              <!-- Nom du candidat -->
+              <td class="candidate-name">
+                <div class="candidate-info">
+                  <div class="candidate-avatar">
+                    <i class="fas fa-user"></i>
+                  </div>
+                  <div class="candidate-details">
+                    <span class="name">{{ candidate.nom }}</span>
+                    <span class="id">ID: {{ candidate.id }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Email -->
+              <td class="candidate-email">
+                <a href="mailto:{{ candidate.email }}">
+                  {{ candidate.email }}
+                </a>
+              </td>
+
+              <!-- Date d'inscription -->
+              <td class="candidate-date">
+                {{ candidate.date | date : "dd/MM/yyyy" }}
+              </td>
+
+              <!-- Statut -->
+              <td class="candidate-status">
+                <span
+                  class="status-badge"
+                  [ngClass]="{
+                    'status-active': candidate.status === 'active',
+                    'status-pending': candidate.status === 'pending',
+                    'status-completed': candidate.status === 'completed'
+                  }"
+                >
+                  <i
+                    class="fas"
+                    [ngClass]="{
+                      'fa-check-circle': candidate.status === 'active',
+                      'fa-clock': candidate.status === 'pending',
+                      'fa-flag-checkered': candidate.status === 'completed'
+                    }"
+                  ></i>
+                  {{ getStatusText(candidate.status || "") }}
+                </span>
+              </td>
+
+              <!-- Score moyen -->
+              <td class="candidate-score">
+                <div
+                  *ngIf="
+                    candidate.scoreObtenu !== undefined &&
+                    candidate.scoreObtenu > 0
+                  "
+                >
+                  <span
+                    class="score"
+                    [ngClass]="getScoreClass(candidate.scoreObtenu)"
+                  >
+                    {{ candidate.scoreObtenu }}%
+                  </span>
+                  <div class="score-bar">
+                    <div
+                      class="score-fill"
+                      [style.width.%]="candidate.scoreObtenu"
+                      [ngClass]="getScoreClass(candidate.scoreObtenu)"
+                    ></div>
+                  </div>
+                </div>
+                <span
+                  *ngIf="!candidate.scoreObtenu || candidate.scoreObtenu === 0"
+                  class="no-score"
+                >
+                  Aucun test
+                </span>
+              </td>
+
+              <!-- Tests passés -->
+              <td class="candidate-tests">
+                <span class="tests-count">
+                  {{ candidate.testsCount || 0 }}
+                  <small>test(s)</small>
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="candidate-actions">
+                <div class="action-buttons">
+                  <button
+                    (click)="viewResults(candidate.id)"
+                    class="action-btn view-btn"
+                    title="Voir les résultats"
+                    [disabled]="
+                      !candidate.testsCount || candidate.testsCount === 0
+                    "
+                  >
+                    <i class="fas fa-chart-line"></i>
+                  </button>
+
+                  <button
+                    (click)="editCandidate(candidate.id)"
+                    class="action-btn edit-btn"
+                    title="Modifier le candidat"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </button>
+
+                  <button
+                    (click)="deleteCandidate(candidate.id)"
+                    class="action-btn delete-btn"
+                    title="Supprimer le candidat"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1" class="pagination-container">
+        <div class="pagination-info">
+          Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à
+          {{
+            currentPage * itemsPerPage > totalItems
+              ? totalItems
+              : currentPage * itemsPerPage
+          }}
+          sur {{ totalItems }} candidats
+        </div>
+
+        <nav class="pagination">
+          <button
+            (click)="loadCandidates(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="pagination-btn"
+          >
+            <i class="fas fa-chevron-left"></i>
+            Précédent
+          </button>
+
+          <div class="pagination-pages">
+            <button
+              *ngFor="let page of pages"
+              (click)="loadCandidates(page)"
+              class="pagination-btn page-btn"
+              [class.active]="page === currentPage"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button
+            (click)="loadCandidates(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="pagination-btn"
+          >
+            Suivant
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </nav>
+      </div>
+    </div>
   </div>
 </div>

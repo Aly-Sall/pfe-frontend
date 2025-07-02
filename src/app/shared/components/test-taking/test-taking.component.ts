@@ -184,6 +184,8 @@ export class TestTakingComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Dans TestTakingComponent, modifiez la méthode startTest() :
+
   startTest(): void {
     if (!this.test || !this.test.id) return;
 
@@ -197,8 +199,10 @@ export class TestTakingComponent implements OnInit, OnDestroy {
 
         // Start timer if enabled
         if (this.test?.showTimer) {
-          // For demo, set a 30-minute timer (adjust as needed)
-          const duration = 30;
+          // ✅ CORRECTION : Utiliser la vraie durée du test au lieu de 30 minutes
+          const duration = this.test.duration || 5; // Utiliser la durée du test, ou 5 minutes par défaut
+          console.log(`🕐 Démarrage du timer pour ${duration} minutes`);
+
           this.attemptService.startTimer(duration);
 
           // Subscribe to timer updates
@@ -221,7 +225,6 @@ export class TestTakingComponent implements OnInit, OnDestroy {
       },
     });
   }
-
   navigateToQuestion(index: number): void {
     if (index < 0 || index >= this.questions.length) return;
 

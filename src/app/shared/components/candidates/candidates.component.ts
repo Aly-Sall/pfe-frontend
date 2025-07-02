@@ -200,6 +200,19 @@ export class CandidatesComponent implements OnInit, OnDestroy, AfterViewInit {
     );
   }
 
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'active':
+        return 'Actif';
+      case 'pending':
+        return 'En attente';
+      case 'completed':
+        return 'Terminé';
+      default:
+        return status;
+    }
+  }
+
   generatePagination(): void {
     const maxVisiblePages: number = 5;
     const halfVisible: number = Math.floor(maxVisiblePages / 2);
