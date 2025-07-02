@@ -1,4 +1,4 @@
-<!-- src/app/shared/components/candidate-tests/candidate-tests.component.html -->
+<!-- src/app/shared/components/candidate-tests/candidate-tests.component.html - VERSION CORRIGÉE -->
 <div class="candidate-container">
   <!-- En-tête candidat -->
   <div class="candidate-header">
@@ -16,17 +16,39 @@
   <div *ngIf="error" class="alert alert-danger">
     <i class="fas fa-exclamation-triangle"></i>
     {{ error }}
+    <button class="btn btn-sm btn-outline-danger ms-2" (click)="refreshTests()">
+      <i class="fas fa-redo"></i>
+      Réessayer
+    </button>
   </div>
 
   <!-- Section des tests disponibles -->
   <div class="tests-section">
     <div class="section-header">
       <h2>Vos tests disponibles</h2>
-      <p class="subtitle">{{ availableTests.length }} test(s) à passer</p>
+      <div class="header-actions">
+        <p class="subtitle">{{ availableTests.length }} test(s) à passer</p>
+        <button
+          class="btn btn-outline-primary btn-sm"
+          (click)="refreshTests()"
+          [disabled]="loading"
+        >
+          <i class="fas fa-redo" [class.fa-spin]="loading"></i>
+          Actualiser
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center p-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+      <p class="mt-2">Chargement de vos tests...</p>
     </div>
 
     <!-- Aucun test disponible -->
-    <div *ngIf="availableTests.length === 0" class="no-tests">
+    <div *ngIf="!loading && availableTests.length === 0" class="no-tests">
       <div class="no-tests-icon">
         <i class="fas fa-clipboard-list"></i>
       </div>
@@ -35,48 +57,37 @@
       <p>
         Contactez votre responsable si vous pensez qu'il s'agit d'une erreur.
       </p>
+      <button class="btn btn-primary" (click)="refreshTests()">
+        <i class="fas fa-redo"></i>
+        Vérifier à nouveau
+      </button>
     </div>
 
-    <!-- Liste des tests -->
-    <div *ngIf="availableTests.length > 0" class="tests-grid">
+    <!-- Liste des tests disponibles -->
+    <div *ngIf="!loading && availableTests.length > 0" class="tests-grid">
       <div
         *ngFor="let test of availableTests; trackBy: trackByTestId"
         class="test-card"
       >
         <div class="test-header">
           <h3 class="test-title">{{ test.title }}</h3>
-          <div class="test-duration">
+          <span class="test-duration">
             <i class="fas fa-clock"></i>
             {{ getDurationText(test.duration) }}
-          </div>
+          </span>
         </div>
 
-        <div class="test-description" *ngIf="test.description">
-          <p>{{ test.description }}</p>
-        </div>
-
-        <div class="test-info">
-          <div class="info-item">
-            <span class="info-label">Durée :</span>
-            <span class="info-value">{{ getDurationText(test.duration) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Statut :</span>
-            <span class="info-value status-available">Disponible</span>
-          </div>
+        <div class="test-description">
+          <p>{{ test.description || "Description du test non disponible" }}</p>
         </div>
 
         <div class="test-actions">
           <button
-            class="btn btn-primary start-test-btn"
+            class="btn btn-primary test-start-btn"
             (click)="startTest(test)"
             [disabled]="loading"
           >
-            <span
-              *ngIf="loading"
-              class="spinner-border spinner-border-sm"
-            ></span>
-            <i class="fas fa-play" *ngIf="!loading"></i>
+            <i class="fas fa-play"></i>
             Commencer le test
           </button>
         </div>
@@ -84,34 +95,45 @@
     </div>
   </div>
 
-  <!-- Instructions -->
-  <div class="instructions-section">
+  <!-- Instructions importantes -->
+  <div *ngIf="!loading && availableTests.length > 0" class="instructions">
     <h3>Instructions importantes</h3>
-    <div class="instructions-grid">
+    <div class="instruction-grid">
       <div class="instruction-item">
-        <i class="fas fa-clock text-warning"></i>
-        <div>
+        <div class="instruction-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="instruction-content">
           <h4>Temps limité</h4>
           <p>Respectez la durée indiquée pour chaque test</p>
         </div>
       </div>
+
       <div class="instruction-item">
-        <i class="fas fa-eye text-info"></i>
-        <div>
+        <div class="instruction-icon">
+          <i class="fas fa-eye"></i>
+        </div>
+        <div class="instruction-content">
           <h4>Surveillance</h4>
           <p>Le test peut être surveillé automatiquement</p>
         </div>
       </div>
+
       <div class="instruction-item">
-        <i class="fas fa-save text-success"></i>
-        <div>
+        <div class="instruction-icon">
+          <i class="fas fa-save"></i>
+        </div>
+        <div class="instruction-content">
           <h4>Sauvegarde</h4>
           <p>Vos réponses sont sauvegardées automatiquement</p>
         </div>
       </div>
+
       <div class="instruction-item">
-        <i class="fas fa-chart-bar text-primary"></i>
-        <div>
+        <div class="instruction-icon">
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="instruction-content">
           <h4>Résultats</h4>
           <p>Vous verrez vos résultats à la fin du test</p>
         </div>

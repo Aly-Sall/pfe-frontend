@@ -3,6 +3,7 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 
 // Webcam module
 import { WebcamModule } from 'ngx-webcam';
@@ -42,7 +43,7 @@ import { LoadingService } from './core/services/loading.service';
 import { ErrorService } from './core/services/error.service';
 import { QuestionService } from './core/services/question.service';
 import { SurveillanceService } from './core/services/surveillance.service';
-import { CandidateTestsComponent } from './candidate-tests/candidate-tests.component'; // ✅ NOUVEAU
+import { CandidateTestsComponent } from './shared/components/candidate-tests/candidate-tests.component';
 
 @NgModule({
   declarations: [
